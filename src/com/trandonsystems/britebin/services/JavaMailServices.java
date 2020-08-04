@@ -24,17 +24,17 @@ public class JavaMailServices {
 	
 	static Logger log = Logger.getLogger(JavaMailServices.class);
 	
-	public static boolean initializeEmailer() {
+	public static boolean initializeEmailer() throws Exception {
 		try {
 		
 			SMTP_HOST = SystemDAL.getSysConfigValue("SMTP-HOST");
 			SMTP_PORT = SystemDAL.getSysConfigValue("SMTP-PORT");
 			SMTP_ACCOUNT_EMAIL = SystemDAL.getSysConfigValue("SMTP-ACCOUNT-EMAIL");
-			SMTP_PASSWORD = SystemDAL.getSysConfigValue("SMTP-Password");
+			SMTP_PASSWORD = SystemDAL.getSysConfigValue("SMTP-PASSWORD");
 			
 		} catch(SQLException ex) {
 			log.error("ERROR: failed to initialize Emailer");
-			return false;
+			throw ex;
 		}
 		
 		return true;
@@ -42,14 +42,21 @@ public class JavaMailServices {
 	
 	public static void sendMail(String recepient, String subject, boolean htmlBody, String body) throws Exception {
 		try {
-			Properties properties = new Properties();
+//			Properties properties = new Properties();
+//			
+//			properties.put("mail.smtp.auth", "true");
+//			properties.put("mail.smtp.starttls.enabled", "true");
+//			properties.put("mail.smtp.starttls.required", "true");
+//			properties.put("mail.smtp.host", SMTP_HOST);
+//			properties.put("mail.smtp.port", SMTP_PORT);
+
+			Properties properties = System.getProperties();
+			properties.setProperty("mail.smtp.host", SMTP_HOST);
 			
-			properties.put("mail.smtp.auth", "true");
-			properties.put("mail.smtp.starttls.enabled", "true");
-			properties.put("mail.smtp.starttls.required", "true");
-			properties.put("mail.smtp.host", SMTP_HOST);
 			properties.put("mail.smtp.port", SMTP_PORT);
-			
+			properties.put("mail.smtp.auth", "true");
+			properties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+
 			String myAccountEmail = SMTP_ACCOUNT_EMAIL;
 			String password = SMTP_PASSWORD;
 			
@@ -67,7 +74,7 @@ public class JavaMailServices {
 			log.info("Message sent successfully - " + recepient);
 
 		} catch (Exception ex) {
-			log.error("ERROR in sendMail:" + ex.getMessage());
+			log.error("ERROR in sendMail: " + ex.getMessage());
 			throw ex;
 		}
 	}

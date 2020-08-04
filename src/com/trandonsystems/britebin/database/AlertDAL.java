@@ -57,6 +57,9 @@ public class AlertDAL {
 		unit.deviceType = deviceType;
 		
 		unit.location = rs.getString("units.location");
+		if (unit.location == null) {
+			unit.location = "";
+		}
 		unit.latitude = rs.getDouble("units.latitude");
 		unit.longitude = rs.getDouble("units.longitude");
 		
@@ -217,7 +220,15 @@ public class AlertDAL {
 		user.modifiedBy = rs.getInt("users.modifiedBy");
 		
 		alert.user = user;
-
+		
+		int damageId = rs.getInt("alerts.damageId");
+		
+		if (damageId != 0) {
+			alert.damage = DamageDAL.getDamage(damageId);
+		} else {
+			alert.damage = null;
+		}
+		
 		return alert;
 	}
 	
@@ -516,6 +527,13 @@ public class AlertDAL {
 			while (rs.next()) {
 				Alert alert = setAlertValues(rs);
 				
+				// Check Damage object to see who is to be sent email
+				if (alert.damage.damageStatus.id == 2) {
+					// Assigned damage email - get assigned user (note it will be the first entry in the history)
+					log.debug("AssignedTo damage alert for user: " + alert.damage.damageHistory.get(0).assignedToUserId);
+					alert.user = UserDAL.getUser(alert.damage.damageHistory.get(0).assignedToUserId);
+				}
+				
 				alerts.add(alert);
 			}
 		} catch (SQLException ex) {
@@ -559,7 +577,7 @@ public class AlertDAL {
 	}
 	
 	
-	public static List<EmailDefn> getAlertEmailDefns() {
+	public static List<EmailDefn> getAlertEmailDefns() throws Exception{
 		log.info("AlertDAL.getAlertEmails()");
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
@@ -589,6 +607,7 @@ public class AlertDAL {
 			}
 		} catch (SQLException ex) {
 			log.error("ERROR: " + ex.getMessage());
+			throw ex;
 		}
 
 		log.debug("No Email definitions: " + emailDefns.size());
@@ -633,11 +652,11 @@ public class AlertDAL {
 				CallableStatement spStmt = conn.prepareCall(spCall)) {
 
 			spStmt.setInt(1, alertId);
-			spStmt.setString(2,  reason);
+			spStmt.setString(2, reason);
 			spStmt.executeUpdate();
 
 		} catch (SQLException ex) {
-			log.error("ERROR (markAlertAsFailed): " + ex.getMessage());
+			log.error("ERROR - markAlertAsFailed: " + ex.getMessage());
 		}	
 	}	
 

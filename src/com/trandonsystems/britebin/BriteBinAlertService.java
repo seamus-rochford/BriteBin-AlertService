@@ -9,10 +9,9 @@ import com.trandonsystems.britebin.services.JavaMailServices;
 public class BriteBinAlertService {
 
 	static Logger log = Logger.getLogger(BriteBinAlertService.class);
-	static AlertServices alertServices = new AlertServices();
 	
 	// Set the scheduling parameters
-	private static int intervalDelay= 5 * 60 * 100; // Repeat every 5 minutes 
+	private static int intervalDelay= 1 * 60 * 1000; // Repeat every 5 minutes 
 		
 	public static void main(String[] args) {
 
@@ -22,7 +21,9 @@ public class BriteBinAlertService {
             log.info("Server is listening on port ");
 			JavaMailServices.initializeEmailer();
  
-            while (true) {
+			AlertServices alertServices = new AlertServices();
+
+			while (true) {
             	log.info("Processing waiting alerts ...");
 
     			alertServices.processWaitingAlerts();
@@ -37,7 +38,6 @@ public class BriteBinAlertService {
         }		
 
         log.info(" ... BriteBinAlertService Terminated ");		
-
 	}
 
 }

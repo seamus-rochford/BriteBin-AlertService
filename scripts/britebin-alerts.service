@@ -1,0 +1,26 @@
+[Unit]
+Description=BriteBin Alert Service
+
+[Service]
+User=root
+
+Type=simple
+StandardOutput=console
+
+Environment="ENV_NAME=DEV"
+
+# The configuration file application.properties should be here
+WorkingDirectory=/apps/britebin/alerts
+
+#path to executable
+#executable is a bash script which calls jar file
+ExecStart=/apps/britebin/alerts/runBriteBinAlerts.sh
+
+SucessExitStatus=143
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+

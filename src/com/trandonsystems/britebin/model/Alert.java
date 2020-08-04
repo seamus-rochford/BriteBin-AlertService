@@ -10,5 +10,6 @@ public class Alert {
 	public AlertDefn alertDefn;
 	public Instant alertDateTime;
 	public User user;
+	public Damage damage;
 	
 }

@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 public class UtilDAL {
 
 	public static String connUrl = "jdbc:mysql://localhost:3306/britebin?serverTimezone=UTC";
+//	public static String connUrl = "jdbc:mysql://root@161.35.32.177:22/britebin?serverTimezone=UTC";
 	public static String username = "admin";
 	public static String password = "Rebel123456#.";
 
