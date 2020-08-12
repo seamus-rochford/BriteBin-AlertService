@@ -13,17 +13,11 @@ import org.apache.log4j.Logger;
 
 import com.trandonsystems.britebin.model.Alert;
 import com.trandonsystems.britebin.model.AlertDefn;
-import com.trandonsystems.britebin.model.AlertType;
-import com.trandonsystems.britebin.model.BinType;
-import com.trandonsystems.britebin.model.ContentType;
-import com.trandonsystems.britebin.model.Country;
-import com.trandonsystems.britebin.model.DeviceType;
 import com.trandonsystems.britebin.model.EmailDefn;
-import com.trandonsystems.britebin.model.Locale;
-import com.trandonsystems.britebin.model.Role;
+
 import com.trandonsystems.britebin.model.Unit;
 import com.trandonsystems.britebin.model.User;
-import com.trandonsystems.britebin.model.UserStatus;
+
 
 public class AlertDAL {
 
@@ -34,12 +28,11 @@ public class AlertDAL {
 
 		Alert alert = new Alert();
 		
+		String localeAbbr = rs.getString("users.locale");
+		
 		alert.id = rs.getInt("alerts.id");
 		
-		AlertType alertType = new AlertType();
-		alertType.id = rs.getInt("ref_alert_type.id");
-		alertType.name = rs.getString("ref_alert_type.name");
-		alert.alertType = alertType;
+		alert.alertType = LookupDAL.getAlertType(localeAbbr, rs.getInt("alerts.alertType"));
 		
 		// Get the unit
 		Unit unit = new Unit();
@@ -51,10 +44,7 @@ public class AlertDAL {
 		
 		unit.serialNo = rs.getString("units.serialNo");
 		
-		DeviceType deviceType = new DeviceType();
-		deviceType.id = rs.getInt("ref_device_type.id");
-		deviceType.name = rs.getString("ref_device_type.name");
-		unit.deviceType = deviceType;
+		unit.deviceType = LookupDAL.getDeviceType(localeAbbr, rs.getInt("units.deviceType"));
 		
 		unit.location = rs.getString("units.location");
 		if (unit.location == null) {
@@ -63,17 +53,8 @@ public class AlertDAL {
 		unit.latitude = rs.getDouble("units.latitude");
 		unit.longitude = rs.getDouble("units.longitude");
 		
-		BinType binType = new BinType();
-		binType.id = rs.getInt("ref_bin_type.id");
-		binType.name = rs.getString("ref_bin_type.name");
-		binType.emptyLevel = rs.getInt("ref_bin_type.emptyLevel");
-		binType.fullLevel = rs.getInt("ref_bin_type.fullLevel");
-		unit.binType = binType;
-		
-		ContentType contentType = new ContentType();
-		contentType.id = rs.getInt("ref_content_type.id");
-		contentType.name = rs.getString("ref_content_type.name");	
-		unit.contentType = contentType;
+		unit.binType = LookupDAL.getBinType(localeAbbr, rs.getInt("units.binType"));
+		unit.contentType = LookupDAL.getContentType(localeAbbr, rs.getInt("units.contentType"));
 		
 		unit.useBinTypeLevel = (rs.getInt("useBinTypeLevel") == 1);
 		unit.emptyLevel = rs.getInt("units.emptyLevel");
@@ -140,23 +121,13 @@ public class AlertDAL {
 		user.email = rs.getString("users.email");
 		user.password = rs.getString("users.password");
 		
-		Role role = new Role();
-		role.id = rs.getInt("ref_roles.id");
-		role.name = rs.getString("ref_roles.name");
-		user.role = role;
+		user.role = LookupDAL.getRole(localeAbbr, rs.getInt("users.role"));
 		
 		user.parent = new  User();
 		user.parent.id = rs.getInt("users.parentId");
 		
-		UserStatus status = new UserStatus();
-		status.id = rs.getInt("ref_status.id");
-		status.name = rs.getString("ref_status.name");
-		user.status = status;
-		
-		Locale locale = new Locale();
-		locale.abbr = rs.getString("ref_locale.abbr");
-		locale.name = rs.getString("ref_locale.name");
-		user.locale = locale;
+		user.status = LookupDAL.getUserStatus(localeAbbr, rs.getInt("users.status"));
+		user.locale = LookupDAL.getLocale(localeAbbr, rs.getString("users.locale"));
 		
 		user.name = rs.getString("users.name");
 		user.addr1 = rs.getString("users.addr1");
@@ -165,11 +136,7 @@ public class AlertDAL {
 		user.county = rs.getString("users.county");
 		user.postcode = rs.getString("users.postcode");
 		
-		Country country = new Country();
-		country.id = rs.getInt("ref_country.id");
-		country.name = rs.getString("ref_country.name");
-		country.abbr = rs.getString("ref_country.abbr");
-		user.country = country;
+		user.country = LookupDAL.getCountry(localeAbbr, rs.getInt("users.country"));;
 		
 		user.mobile = rs.getString("users.mobile");
 		user.homeTel = rs.getString("users.homeTel");
@@ -599,6 +566,7 @@ public class AlertDAL {
 				EmailDefn emailDefn = new EmailDefn();
 				
 				emailDefn.alertType = rs.getInt("alertType");
+				emailDefn.locale = rs.getString("locale");
 				emailDefn.subject = rs.getString("subject");
 				emailDefn.htmlBody = (rs.getInt("htmlBody") == 1);
 				emailDefn.body = rs.getString("body");
@@ -614,7 +582,7 @@ public class AlertDAL {
 		return emailDefns;		
 	}
 	
-	public static void markAlertAsProcessed(int alertId) throws SQLException {
+	public static void markAlertAsProcessed(int alertId, int contactType, String contactDetails) throws SQLException {
 		log.info("AlertDAL.markAlertAsProcessed()");
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
@@ -622,13 +590,15 @@ public class AlertDAL {
 			log.error("ERROR: " + ex.getMessage());
 		}
 
-		String spCall = "{ call MarkAlertAsProcessed(?) }";
+		String spCall = "{ call MarkAlertAsProcessed(?, ?, ?) }";
 		log.info("SP Call: " + spCall);
 
 		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
 				CallableStatement spStmt = conn.prepareCall(spCall)) {
 
 			spStmt.setInt(1, alertId);
+			spStmt.setInt(2,  contactType);
+			spStmt.setString(3, contactDetails);
 			spStmt.executeUpdate();
 
 		} catch (SQLException ex) {
@@ -637,22 +607,24 @@ public class AlertDAL {
 		}	
 	}	
 	
-	public static void markAlertAsFailed(int alertId, String reason) {
-		log.info("AlertDAL.markAlertAsProcessed()");
+	public static void markAlertAsFailed(int alertId, int contactType, String contactDetails, String reason) {
+		log.info("AlertDAL.markAlertAsFailed()");
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
 
-		String spCall = "{ call MarkAlertAsFailed(?, ?) }";
+		String spCall = "{ call MarkAlertAsFailed(?, ?, ?, ?) }";
 		log.info("SP Call: " + spCall);
 
 		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
 				CallableStatement spStmt = conn.prepareCall(spCall)) {
 
 			spStmt.setInt(1, alertId);
-			spStmt.setString(2, reason);
+			spStmt.setInt(2,  contactType);
+			spStmt.setString(3, contactDetails);
+			spStmt.setString(4, reason);
 			spStmt.executeUpdate();
 
 		} catch (SQLException ex) {

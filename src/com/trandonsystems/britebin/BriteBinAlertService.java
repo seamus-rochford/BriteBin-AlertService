@@ -18,7 +18,6 @@ public class BriteBinAlertService {
         log.info("BriteBinAlertService started ... ");
 		
         try {        	 
-            log.info("Server is listening on port ");
 			JavaMailServices.initializeEmailer();
  
 			AlertServices alertServices = new AlertServices();

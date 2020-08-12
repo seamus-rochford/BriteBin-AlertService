@@ -1,7 +1,11 @@
 package com.trandonsystems.britebin.services;
 
 import java.sql.SQLException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Formatter;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.log4j.Logger;
 
@@ -27,12 +31,12 @@ public class AlertServices {
 		}
 	}
 	
-	private EmailDefn getEmailDefn(int alertType) {
+	private EmailDefn getEmailDefn(int alertType, String locale) {
 		
 		EmailDefn emailDefn = new EmailDefn();
 		
 		for (int i = 0; i < emailDefns.size(); i++) {
-			if(emailDefns.get(i).alertType == alertType) {
+			if(emailDefns.get(i).alertType == alertType && emailDefns.get(i).locale.contentEquals(locale)) {
 				return emailDefns.get(i);
 			}
 		}
@@ -41,9 +45,41 @@ public class AlertServices {
 	}
 	
 	private String substitudeFields(String body, Alert alert) {
+		
+		// We need to get the date in the correct timezone
+		String timeZoneName = "Europe/Dublin";
+		Locale locale = new Locale("en", "IE");
+		String datePattern = "yyyy-MM-dd HH:mm:ss";
+		
+		switch (alert.user.locale.abbr) {
+		case "hr-HR":
+			timeZoneName = "Europe/Zagreb";
+			locale = new Locale("hr", "HR");
+			datePattern = "yyyy-MM-dd HH:mm:ss";
+			break;
+		case "fr-FR":
+			timeZoneName = "Europe/Paris";
+			locale = new Locale("fr", "FR");
+			datePattern = "yyyy-MM-dd HH:mm:ss";
+			break;
+		case "no-No":
+			timeZoneName = "Europe/Oslo";
+			locale = new Locale("no", "NO");
+			datePattern = "yyyy-MM-dd HH:mm:ss";
+			break;
+		default:
+			timeZoneName = "Europe/Dublin";
+			locale = new Locale("en", "IE");
+			datePattern = "yyyy-MM-dd HH:mm:ss";
+		}
+		
+		ZoneId zoneId = ZoneId.of(timeZoneName);
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(datePattern, locale).withZone(zoneId);
+		String alertDateTimeStr = formatter.format(alert.alertDateTime);
+		
 		log.debug("Substitude fields");
 		log.debug("AlertType: " + alert.alertType.name);
-		log.debug("alertDateTime: " + alert.alertDateTime.toString());
+		log.debug("alertDateTime: " + alertDateTimeStr);
 		log.debug("serialNo: " + alert.unit.serialNo);
 		log.debug("location: " + alert.unit.location);
 		log.debug("binType: " + alert.unit.binType.name);
@@ -51,7 +87,7 @@ public class AlertServices {
 		log.debug("contentType: " + alert.unit.contentType.name);
 		
 		String newBody = body.replaceAll("@@alertType@@", alert.alertType.name);
-		newBody = newBody.replaceAll("@@alertDateTime@@", alert.alertDateTime.toString());
+		newBody = newBody.replaceAll("@@alertDateTime@@", alertDateTimeStr);
 		newBody = newBody.replaceAll("@@serialNo@@", alert.unit.serialNo);
 		newBody = newBody.replaceAll("@@location@@", alert.unit.location);
 		newBody = newBody.replaceAll("@@binType@@", alert.unit.binType.name);
@@ -85,7 +121,7 @@ public class AlertServices {
 		
 		try {
 			log.debug("Email");
-			EmailDefn emailDefn = getEmailDefn(alert.alertType.id);
+			EmailDefn emailDefn = getEmailDefn(alert.alertType.id, alert.user.locale.abbr);
 			
 			log.debug("Get subject");
 			String subject = emailDefn.subject;
@@ -96,27 +132,58 @@ public class AlertServices {
 			JavaMailServices.sendMail(alert.user.email, subject, emailDefn.htmlBody, emailBody);
 			
 			log.info("Email sent: " + alert.user.email + "    Msg: " + emailBody);
+			
+			// Mark alert as processed
+			AlertDAL.markAlertAsProcessed(alert.id, 1, alert.user.email);
+			
 		} catch (SQLException ex) {
-			log.error("ERROR: failed to send email for alertId: " + alert.id + " - Eamil: " + alert.user.email + "  error: " + ex.getMessage());
+			String errorMsg = "ERROR: failed to send email for alertId: " + alert.id + " - Email: " + alert.user.email + "  error: " + ex.getMessage();
+			log.error(errorMsg);
+			AlertDAL.markAlertAsFailed(alert.id, 1, alert.user.email, errorMsg);
 			throw ex;
 		}
 	}
 	
 	
-	public void sms(Alert alert) {
+	public void sms(Alert alert) throws Exception {
 		// Not implemented
+		try {
+			AlertDAL.markAlertAsProcessed(alert.id, 2, alert.user.mobile);
+		} catch (Exception ex) {
+			String errorMsg = "ERROR: failed to send SMS for alertId: " + alert.id + " - SMS Number: " + alert.user.mobile + "  error: " + ex.getMessage();
+			log.error(errorMsg);
+			AlertDAL.markAlertAsFailed(alert.id, 2, alert.user.email, errorMsg);
+			throw ex;
+		}
 	}
 	
 	
-	public void whatsApp(Alert alert) {
+	public void whatsApp(Alert alert) throws Exception {
 		// Not implemented
+		try {
+
+			AlertDAL.markAlertAsProcessed(alert.id, 3, alert.user.mobile);
+		} catch (Exception ex) {
+			String errorMsg = "ERROR: failed to send WhatsApp for alertId: " + alert.id + " - Mobile Number: " + alert.user.mobile + "  error: " + ex.getMessage();
+			log.error(errorMsg);
+			AlertDAL.markAlertAsFailed(alert.id, 3, alert.user.email, errorMsg);
+			throw ex;
+		}	
 	}
 	
 	
-	public void push(Alert alert) {
+	public void push(Alert alert) throws Exception {
 		// Not implemented
+		try {
+
+			AlertDAL.markAlertAsProcessed(alert.id, 4, alert.user.mobile);
+		} catch (Exception ex) {
+			String errorMsg = "ERROR: failed to send Push Notification for alertId: " + alert.id + " - Mobile Number: " + alert.user.mobile + "  error: " + ex.getMessage();
+			log.error(errorMsg);
+			AlertDAL.markAlertAsFailed(alert.id, 4, alert.user.email, errorMsg);
+			throw ex;
+		}	
 	}
-	
 	
 	
 	private void processAlert(Alert alert) {
@@ -139,14 +206,10 @@ public class AlertServices {
 				log.info("Notify by Push Notification");
 				push(alert);
 			}
-			
-			// Mark alert as processed
-			AlertDAL.markAlertAsProcessed(alert.id);
-			
+						
 		} catch(Exception ex) {
 			String errorMsg = "ERROR (processAlert); " + ex.getMessage(); 
 			log.error(errorMsg);
-			AlertDAL.markAlertAsFailed(alert.id, errorMsg);
 		}
 	}
 	

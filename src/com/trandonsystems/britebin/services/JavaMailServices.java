@@ -3,13 +3,19 @@ package com.trandonsystems.britebin.services;
 import java.sql.SQLException;
 import java.util.Properties;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
 import javax.mail.Authenticator;
+import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import org.apache.log4j.Logger;
 
@@ -87,7 +93,31 @@ public class JavaMailServices {
 			message.setSubject(subject);
 			
 			if (htmlBody) {
-				message.setContent(body, "text/html");
+//				message.setContent(body, "text/html");
+				
+				// This Message has 2 parts - the body and the embed image
+		         MimeMultipart multipart = new MimeMultipart("related");
+
+		         // first part (the html)
+		         BodyPart messageBodyPart = new MimeBodyPart();
+		         // The body will have <img src=\"cid:image\"> inside it
+		         String htmlText = body;
+		         messageBodyPart.setContent(htmlText, "text/html");
+		         // add it
+		         multipart.addBodyPart(messageBodyPart);
+
+		         // second part (the image)
+		         messageBodyPart = new MimeBodyPart();
+		         DataSource fds = new FileDataSource("logo.png");
+
+		         messageBodyPart.setDataHandler(new DataHandler(fds));
+		         messageBodyPart.setHeader("Content-ID", "<image>");
+
+		         // add image to the multipart
+		         multipart.addBodyPart(messageBodyPart);
+
+		         // put everything together
+		         message.setContent(multipart);				
 			} else {
 				// Plain text body
 				message.setText(body);
