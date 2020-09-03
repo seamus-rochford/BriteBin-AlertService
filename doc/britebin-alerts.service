@@ -1,5 +1,5 @@
 [Unit]
-Description=BriteBin Alert Servicer
+Description=BriteBin Alert Service
 
 [Service]
 User=root
@@ -16,7 +16,7 @@ WorkingDirectory=/apps/britebin/alerts
 #executable is a bash script which calls jar file
 ExecStart=/apps/britebin/alerts/runBriteBinAlertService.sh
 
-SucessExitStatus=143
+SuccessExitStatus=143
 TimeoutStopSec=10
 Restart=on-failure
 RestartSec=5s

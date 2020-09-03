@@ -1,9 +1,12 @@
 package com.trandonsystems.britebin;
 
+import java.io.File;
+
 import org.apache.log4j.Logger;
 
 import com.trandonsystems.britebin.services.AlertServices;
 import com.trandonsystems.britebin.services.JavaMailServices;
+import com.trandonsystems.britebin.services.SmsServices;
 
 
 public class BriteBinAlertService {
@@ -16,9 +19,20 @@ public class BriteBinAlertService {
 	public static void main(String[] args) {
 
         log.info("BriteBinAlertService started ... ");
+        
+        String workingDir = System.getProperty("user.dir");
+		log.info("Working Directory = " + workingDir);
+		
+		String logoFileName = System.getProperty("user.dir") + "/logo.png";
+		File logoImage = new File(logoFileName);
+		
+		if(!(logoImage.exists() && !logoImage.isDirectory())) { 
+		    log.error("logo image missing from working directory: " + workingDir);
+		}
 		
         try {        	 
 			JavaMailServices.initializeEmailer();
+			SmsServices.initializeSms();
  
 			AlertServices alertServices = new AlertServices();
 

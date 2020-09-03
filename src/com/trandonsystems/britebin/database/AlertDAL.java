@@ -14,9 +14,12 @@ import org.apache.log4j.Logger;
 import com.trandonsystems.britebin.model.Alert;
 import com.trandonsystems.britebin.model.AlertDefn;
 import com.trandonsystems.britebin.model.EmailDefn;
-
 import com.trandonsystems.britebin.model.Unit;
 import com.trandonsystems.britebin.model.User;
+import com.trandonsystems.britebin.model.sms.Sms;
+import com.trandonsystems.britebin.model.sms.SmsDefn;
+import com.trandonsystems.britebin.model.sms.SmsResponse;
+import com.trandonsystems.britebin.model.sms.SmsResponseMessage;
 
 
 public class AlertDAL {
@@ -496,7 +499,7 @@ public class AlertDAL {
 				
 				// Check Damage object to see who is to be sent email
 				if (alert.damage.damageStatus.id == 2) {
-					// Assigned damage email - get assigned user (note it will be the first entry in the history)
+					// Assigned damage email - get assigned user (note it will be the first entry in the history - history is in descending order  i.e. the latest entry first)
 					log.debug("AssignedTo damage alert for user: " + alert.damage.damageHistory.get(0).assignedToUserId);
 					alert.user = UserDAL.getUser(alert.damage.damageHistory.get(0).assignedToUserId);
 				}
@@ -582,7 +585,44 @@ public class AlertDAL {
 		return emailDefns;		
 	}
 	
-	public static void markAlertAsProcessed(int alertId, int contactType, String contactDetails) throws SQLException {
+	public static List<SmsDefn> getAlertSmsDefns() throws Exception{
+		log.info("AlertDAL.getAlertSmsDefns()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		List<SmsDefn> smsDefns = new ArrayList<SmsDefn>();
+
+		String spCall = "{ call GetAlertsmsDefns() }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			ResultSet rs = spStmt.executeQuery();
+
+			while (rs.next()) {
+				SmsDefn smsDefn = new SmsDefn();
+				
+				smsDefn.alertType = rs.getInt("alertType");
+				smsDefn.locale = rs.getString("locale");
+				smsDefn.message = rs.getString("message");
+				
+				smsDefns.add(smsDefn);
+			}
+		} catch (SQLException ex) {
+			log.error("ERROR: " + ex.getMessage());
+			throw ex;
+		}
+
+		log.debug("No. SMS definitions: " + smsDefns.size());
+		
+		return smsDefns;		
+	}
+	
+	public static void markAlertAsProcessed(int alertId) throws SQLException {
 		log.info("AlertDAL.markAlertAsProcessed()");
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
@@ -590,15 +630,13 @@ public class AlertDAL {
 			log.error("ERROR: " + ex.getMessage());
 		}
 
-		String spCall = "{ call MarkAlertAsProcessed(?, ?, ?) }";
+		String spCall = "{ call MarkAlertAsProcessed(?) }";
 		log.info("SP Call: " + spCall);
 
 		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
 				CallableStatement spStmt = conn.prepareCall(spCall)) {
 
 			spStmt.setInt(1, alertId);
-			spStmt.setInt(2,  contactType);
-			spStmt.setString(3, contactDetails);
 			spStmt.executeUpdate();
 
 		} catch (SQLException ex) {
@@ -607,29 +645,163 @@ public class AlertDAL {
 		}	
 	}	
 	
-	public static void markAlertAsFailed(int alertId, int contactType, String contactDetails, String reason) {
-		log.info("AlertDAL.markAlertAsFailed()");
+//	public static void markAlertAsFailed(int alertId, int contactType, String contactDetails, String reason) {
+//		log.info("AlertDAL.markAlertAsFailed()");
+//		try {
+//			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+//		} catch (Exception ex) {
+//			log.error("ERROR: " + ex.getMessage());
+//		}
+//
+//		String spCall = "{ call MarkAlertAsFailed(?, ?, ?, ?) }";
+//		log.info("SP Call: " + spCall);
+//
+//		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+//				CallableStatement spStmt = conn.prepareCall(spCall)) {
+//
+//			spStmt.setInt(1, alertId);
+//			spStmt.setInt(2,  contactType);
+//			spStmt.setString(3, contactDetails);
+//			spStmt.setString(4, reason);
+//			spStmt.executeUpdate();
+//
+//		} catch (SQLException ex) {
+//			log.error("ERROR - markAlertAsFailed: " + ex.getMessage());
+//		}	
+//	}	
+//
+	public static int generateSms(int alertId, String phoneNo, String message) throws SQLException {
+		log.info("AlertDAL.generateSms()");
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
 
-		String spCall = "{ call MarkAlertAsFailed(?, ?, ?, ?) }";
+		String spCall = "{ call InsertSmsMessage(?, ?, ?, ?) }";
+		log.info("SP Call: " + spCall);
+
+		int id = 0;
+		
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, id);
+			spStmt.setInt(2,  alertId);
+			spStmt.setString(3, phoneNo);
+			spStmt.setString(4, message);
+			spStmt.executeUpdate();
+			
+			id = spStmt.getInt(1);
+			
+			return id;
+
+		} catch (SQLException ex) {
+			log.error("ERROR - generateSms: " + ex.getMessage());
+			throw ex;
+		}			
+	}
+
+	public static void saveSmsResponseMessage(Connection conn, int smsId, SmsResponseMessage smsResponseMessage) throws SQLException {
+		String spCall = "{ call saveSmsResponseMessage(?, ?, ?, ?, ?) }";
+		log.info("SP Call: " + spCall);
+		
+		try (CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			log.info("smsId: " + smsId);
+			log.info("messageId: " + smsResponseMessage.messageId);
+			log.info("destination: " + smsResponseMessage.destination.phoneNumber);
+			log.info("status.code: " + smsResponseMessage.status.code);
+			log.info("status.description: " + smsResponseMessage.status.description);
+			spStmt.setInt(1, smsId);
+			spStmt.setString(2, smsResponseMessage.messageId);
+			spStmt.setString(3, smsResponseMessage.destination.phoneNumber);
+			spStmt.setInt(4, smsResponseMessage.status.code);
+			spStmt.setString(5, smsResponseMessage.status.description);
+			spStmt.executeUpdate();
+
+			return;
+
+		} catch (SQLException ex) {
+			log.error("ERROR - saveSmsResponseMessage: " + ex.getMessage());
+			throw ex;
+		}			
+		
+	}
+	
+	public static void saveSmsResponse(int smsId, int httpResponseCode, SmsResponse smsResponse) throws SQLException {
+		
+		log.info("AlertDAL.saveSmsResponse()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call SaveSMSResponse(?, ?, ?, ?, ?) }";
+		log.info("SP Call: " + spCall);
+		
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, smsId);
+			spStmt.setInt(2, httpResponseCode);
+			spStmt.setInt(3, smsResponse.resultCode);
+			spStmt.setString(4, smsResponse.resultDescription);
+			spStmt.setInt(5, smsResponse.smsCount);
+			spStmt.executeUpdate();
+			log.debug("SMS Response saved");
+
+			for(int i = 0; i < smsResponse.messages.size(); i++) {
+				saveSmsResponseMessage(conn, smsId, smsResponse.messages.get(i));
+			}
+			
+			log.debug("SMS Response Messages saved");
+			return;
+
+		} catch (SQLException ex) {
+			log.error("ERROR - saveSmsResponse: " + ex.getMessage());
+			throw ex;
+		}			
+	}	
+
+	public static List<Sms> getWaitingSms() throws SQLException {
+		
+		log.info("AlertDAL.getWaitingSms()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		List<Sms> smsList = new ArrayList<Sms>();
+
+		String spCall = "{ call getWaitingSms() }";
 		log.info("SP Call: " + spCall);
 
 		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
 				CallableStatement spStmt = conn.prepareCall(spCall)) {
 
-			spStmt.setInt(1, alertId);
-			spStmt.setInt(2,  contactType);
-			spStmt.setString(3, contactDetails);
-			spStmt.setString(4, reason);
-			spStmt.executeUpdate();
+			ResultSet rs = spStmt.executeQuery();
 
+			while (rs.next()) {
+				Sms sms = new Sms();
+				
+				sms.id = rs.getInt("id");
+				sms.phoneNo = rs.getString("phoneNo");
+				sms.message = rs.getString("message");
+				
+				smsList.add(sms);
+			}
 		} catch (SQLException ex) {
-			log.error("ERROR - markAlertAsFailed: " + ex.getMessage());
-		}	
-	}	
+			log.error("ERROR: " + ex.getMessage());
+			throw ex;
+		}
+
+		log.debug("No sms: " + smsList.size());
+		return smsList;
+	}
+		
+	
 
 }

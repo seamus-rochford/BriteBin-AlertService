@@ -3,7 +3,6 @@ package com.trandonsystems.britebin.services;
 import java.sql.SQLException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Formatter;
 import java.util.List;
 import java.util.Locale;
 
@@ -14,12 +13,15 @@ import com.google.gson.GsonBuilder;
 import com.trandonsystems.britebin.database.AlertDAL;
 import com.trandonsystems.britebin.model.Alert;
 import com.trandonsystems.britebin.model.EmailDefn;
+import com.trandonsystems.britebin.model.sms.Sms;
+import com.trandonsystems.britebin.model.sms.SmsDefn;
 
 public class AlertServices {
 
 	static Logger log = Logger.getLogger(AlertServices.class);
 	static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 	static List<EmailDefn> emailDefns;
+	static List<SmsDefn> smsDefns;
 
 	public AlertServices() throws Exception {
 		log.info("Constructor ...");
@@ -29,6 +31,15 @@ public class AlertServices {
 		} catch (Exception ex) {
 			log.error("AlertServices.Constructor() - getAlertEmailDefns() ERROR: " + ex.getMessage());
 		}
+		
+		try {
+			// Load the email subjects and bodies
+			smsDefns = AlertDAL.getAlertSmsDefns();
+		} catch (Exception ex) {
+			log.error("AlertServices.Constructor() - getAlertSmsDefns() ERROR: " + ex.getMessage());
+		}
+		
+		
 	}
 	
 	private EmailDefn getEmailDefn(int alertType, String locale) {
@@ -42,6 +53,19 @@ public class AlertServices {
 		}
 		
 		return emailDefn;
+	}
+	
+	private SmsDefn getSmsDefn(int alertType, String locale) {
+		
+		SmsDefn smsDefn = new SmsDefn();
+		
+		for (int i = 0; i < smsDefns.size(); i++) {
+			if(smsDefns.get(i).alertType == alertType && smsDefns.get(i).locale.contentEquals(locale)) {
+				return smsDefns.get(i);
+			}
+		}
+		
+		return smsDefn;
 	}
 	
 	private String substitudeFields(String body, Alert alert) {
@@ -85,6 +109,8 @@ public class AlertServices {
 		log.debug("binType: " + alert.unit.binType.name);
 		log.debug("deviceType: " + alert.unit.deviceType.name);
 		log.debug("contentType: " + alert.unit.contentType.name);
+		
+		log.debug("Email body" + body);
 		
 		String newBody = body.replaceAll("@@alertType@@", alert.alertType.name);
 		newBody = newBody.replaceAll("@@alertDateTime@@", alertDateTimeStr);
@@ -133,26 +159,35 @@ public class AlertServices {
 			
 			log.info("Email sent: " + alert.user.email + "    Msg: " + emailBody);
 			
-			// Mark alert as processed
-			AlertDAL.markAlertAsProcessed(alert.id, 1, alert.user.email);
-			
 		} catch (SQLException ex) {
 			String errorMsg = "ERROR: failed to send email for alertId: " + alert.id + " - Email: " + alert.user.email + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-			AlertDAL.markAlertAsFailed(alert.id, 1, alert.user.email, errorMsg);
+//			AlertDAL.markEmailAsFailed(alert.id, 1, alert.user.email, errorMsg);
 			throw ex;
 		}
 	}
 	
 	
-	public void sms(Alert alert) throws Exception {
-		// Not implemented
+	public void generateSms(Alert alert) throws Exception {
+		
 		try {
-			AlertDAL.markAlertAsProcessed(alert.id, 2, alert.user.mobile);
+
+			log.debug("generateSms");
+			SmsDefn smsDefn = getSmsDefn(alert.alertType.id, alert.user.locale.abbr);
+	
+			log.debug("Get sms message");
+			String smsMessage = substitudeFields(smsDefn.message, alert);
+			
+			String phoneNo = UtilServices.stripPhoneNo(alert.user.mobile);
+			
+			AlertDAL.generateSms(alert.id, phoneNo, smsMessage);
+						
+			log.info("Email sent: " + alert.user.email + "    Msg: " + smsMessage);
+			
 		} catch (Exception ex) {
-			String errorMsg = "ERROR: failed to send SMS for alertId: " + alert.id + " - SMS Number: " + alert.user.mobile + "  error: " + ex.getMessage();
+			String errorMsg = "ERROR: failed to generate SMS for alertId: " + alert.id + " - SMS Number: " + alert.user.mobile + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-			AlertDAL.markAlertAsFailed(alert.id, 2, alert.user.email, errorMsg);
+//			AlertDAL.markSmsAlertAsFailed(alert.id, 2, alert.user.email, errorMsg);
 			throw ex;
 		}
 	}
@@ -162,11 +197,10 @@ public class AlertServices {
 		// Not implemented
 		try {
 
-			AlertDAL.markAlertAsProcessed(alert.id, 3, alert.user.mobile);
 		} catch (Exception ex) {
 			String errorMsg = "ERROR: failed to send WhatsApp for alertId: " + alert.id + " - Mobile Number: " + alert.user.mobile + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-			AlertDAL.markAlertAsFailed(alert.id, 3, alert.user.email, errorMsg);
+//			AlertDAL.markWhatsAppAsFailed(alert.id, 3, alert.user.email, errorMsg);
 			throw ex;
 		}	
 	}
@@ -176,11 +210,10 @@ public class AlertServices {
 		// Not implemented
 		try {
 
-			AlertDAL.markAlertAsProcessed(alert.id, 4, alert.user.mobile);
 		} catch (Exception ex) {
 			String errorMsg = "ERROR: failed to send Push Notification for alertId: " + alert.id + " - Mobile Number: " + alert.user.mobile + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-			AlertDAL.markAlertAsFailed(alert.id, 4, alert.user.email, errorMsg);
+//			AlertDAL.markPushAsFailed(alert.id, 4, alert.user.email, errorMsg);
 			throw ex;
 		}	
 	}
@@ -189,14 +222,15 @@ public class AlertServices {
 	private void processAlert(Alert alert) {
 		
 		try {
-			log.info("ProcessAlert: " + alert.id);
+			log.info("processAlert: " + alert.id);
+			
 			if (alert.alertDefn.notifyByEmail) {
 				log.info("Notify by email");
 				email(alert);
 			}
 			if (alert.alertDefn.notifyBySms) {
 				log.info("Notify by SMS");
-				sms(alert);
+				generateSms(alert);
 			}
 			if (alert.alertDefn.notifyByWhatsApp) {
 				log.info("Notify by WhatsApp");
@@ -206,12 +240,16 @@ public class AlertServices {
 				log.info("Notify by Push Notification");
 				push(alert);
 			}
-						
+
+			// Mark alert as processed
+			AlertDAL.markAlertAsProcessed(alert.id);
+			
 		} catch(Exception ex) {
 			String errorMsg = "ERROR (processAlert); " + ex.getMessage(); 
 			log.error(errorMsg);
 		}
 	}
+	
 	
 	public void processWaitingAlerts() {
 		log.info("AlertServices.processWaitingAlerts() - started");
@@ -221,9 +259,13 @@ public class AlertServices {
 			log.info("No. of Alerts to Process: " + waitingAlerts.size());
 			
 			for (int i = 0; i < waitingAlerts.size(); i++) {
-				log.debug("Process Alert: " + waitingAlerts.get(i).id);
 				processAlert(waitingAlerts.get(i));
 			}
+			
+//			senEmails();
+			sendSms();
+//			sendWhatsApp();
+//			sendPushNotifications();
 			
 		} catch (Exception ex) {
 			log.error("processWaitingAlerts: ERROR: " + ex.getMessage());
@@ -232,4 +274,33 @@ public class AlertServices {
 	}
 	
 	
+	public void sendEmails() {
+		
+	}
+	
+	
+	public void sendSms() {
+		try {
+			
+			// Get list of unsent sms
+			List<Sms> smsList = AlertDAL.getWaitingSms();
+			
+			for(int i = 0; i < smsList.size(); i++) {
+				SmsServices.sendSMS(smsList.get(i));
+			}
+			
+		} catch (SQLException ex) {
+			log.error("processWaitingAlerts: ERROR: " + ex.getMessage());
+		}		
+	}
+	
+	
+	public void sendWhatsApp() {
+		
+	}	
+
+	public void sendPushNotifications() {
+		
+	}	
+
 }

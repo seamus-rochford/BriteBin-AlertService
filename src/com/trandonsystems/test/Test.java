@@ -19,6 +19,8 @@ import org.apache.log4j.Logger;
 
 public class Test {
 
+	public static Logger log = Logger.getLogger(Test.class);
+	
     public static final boolean SORT_BY_REGION = false;
 
     private static Map<String, String> getAllZoneIdsAndItsOffSet() {
@@ -72,46 +74,80 @@ public class Test {
             System.out.printf(out);
         });
 
-        System.out.println("\nTotal Zone IDs " + sortedMap.size());		
+        System.out.println("\nTotal Zone IDs " + sortedMap.size());
+        System.out.println("\n\n");
 	}
-	public static void main(String[] args) {
-		
-		final Logger log = Logger.getLogger(Test.class);
-		
-		String envName= System.getenv("ENV_NAME");
-		log.info("ENV_NAME: " + envName);
-
+    
+    private static void testTimeZones() {
 		Instant instant = Instant.now();
-		System.out.println(instant);
-		
-//		getTimeZones();
+		System.out.println("UTC Time: " + instant);
 		
 		Locale locale = new Locale("hr", "HR");
 		
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", locale).withZone(ZoneId.systemDefault());
-		System.out.println("Default: " + formatter.format(instant));
+		System.out.println("   >>> " + formatter.format(instant));
 		
 		ZoneId dublin = ZoneId.of("Europe/Dublin");
-		System.out.println("Dublin: " + dublin);
+		System.out.println("\nDublin: " + dublin);
 		locale = new Locale("en", "IE");
 		formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", locale).withZone(dublin);
-		System.out.println(formatter.format(instant));
+		System.out.println("   >>> " + formatter.format(instant));
 		
 		ZoneId zagreb = ZoneId.of("Europe/Zagreb");
-		System.out.println("zagreb: " + zagreb.toString());
+		System.out.println("\nZagreb: " + zagreb.toString());
 		locale = new Locale("hr", "HR");
 		formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", locale).withZone(zagreb);
-		System.out.println(formatter.format(instant));
+		System.out.println("   >>> " + formatter.format(instant));
 		
-		ZoneId paris = ZoneId.of("Europe/Oslo");
-		System.out.println("Paris: " + paris);
+		ZoneId paris = ZoneId.of("Europe/Paris");
+		System.out.println("\nParis: " + paris);
 		locale = new Locale("fr", "FR");
 		formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", locale).withZone(paris);
-		System.out.println(formatter.format(instant));
+		System.out.println("   >>> " + formatter.format(instant));
 		
+		ZoneId oslo = ZoneId.of("Europe/Oslo");
+		System.out.println("\nOslo: " + oslo);
+		locale = new Locale("no", "NO");
+		formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", locale).withZone(oslo);
+		System.out.println("   >>> " + formatter.format(instant));
 		
-//		log.info("Test Emails started ... ");
-//		log.info("Working Directory = " + System.getProperty("user.dir"));
+		ZoneId newYork = ZoneId.of("America/New_York");
+		System.out.println("\nNew York: " + newYork);
+		locale = new Locale("en", "US");
+		formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", locale).withZone(newYork);
+		System.out.println("   >>> " + formatter.format(instant));
+    }
+    
+	public static String stripPhoneNo(String phoneNo) {
+		
+		// Remove all except digits
+		String newPhoneNumber = phoneNo.replaceAll("[^0-9]", "");
+		
+		// Remove leading zeros
+		newPhoneNumber = newPhoneNumber.replaceAll("^0+(?=.)", "");
+		
+		return newPhoneNumber;
+	}
+	
+	public static void main(String[] args) {
+		
+		String envName= System.getenv("ENV_NAME");
+		log.info("ENV_NAME: " + envName);
+
+//		getTimeZones();
+//		
+//		testTimeZones();
+		
+		String phoneNo = "+00353.87.2646379";
+		phoneNo = stripPhoneNo(phoneNo);
+		System.out.println(phoneNo);
+		
+		phoneNo = "+00353.00.2640379";
+		phoneNo = stripPhoneNo(phoneNo);
+		System.out.println(phoneNo);
+		
+		log.info("Test Emails started ... ");
+		log.info("Working Directory = " + System.getProperty("user.dir"));
 //		
 //		String fileName = "logo.png";
 //		boolean fileExists = new File(fileName).isFile();
@@ -136,7 +172,7 @@ public class Test {
 //            ex.printStackTrace();
 //        }		
 
-        log.info(" ... Test Emails Terminated ");		
+        log.info("\n ... Test Emails Terminated ");		
 	}
 
 }
