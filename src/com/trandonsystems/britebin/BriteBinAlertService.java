@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import com.trandonsystems.britebin.services.AlertServices;
 import com.trandonsystems.britebin.services.JavaMailServices;
 import com.trandonsystems.britebin.services.SmsServices;
+import com.trandonsystems.britebin.services.UnitServices;
 
 
 public class BriteBinAlertService {
@@ -30,7 +31,11 @@ public class BriteBinAlertService {
 		    log.error("logo image missing from working directory: " + workingDir);
 		}
 		
-        try {        	 
+        try {
+        	
+        	// Check if any units are not reporting
+        	UnitServices.scheduleCheckUnits();
+        	
 			JavaMailServices.initializeEmailer();
 			SmsServices.initializeSms();
  
