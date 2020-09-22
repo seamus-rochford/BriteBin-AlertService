@@ -40,16 +40,18 @@ public class UnitServices {
 					if (hoursSinceLastReading > 73) {
 						// Check if alert in past 24 hours - only report this once a day
 						if (UnitDAL.getNoReportingAlertCount24Hours(unitReading.unit.id) == 0) {
+							log.debug("Tekelek Unit: " + unitReading.unit.id + " not reporting since " + new Date());
 							UnitDAL.saveAlert(unitReading.unit.id, unitReading.id, "Tekelek unit not reporting in past 73 hours");
 						}
 					}
 
-				} else if (unitReading.unit.deviceType.id == 1) {
+				} else if (unitReading.unit.deviceType.id == 2) {
 					// BriteBin Sensor - it reports multiple time s per hour - report if no readings after 24 hour
 				
 					if (hoursSinceLastReading > 24) {
 						// Check if alert in past 24 hours - only report this once a day
 						if (UnitDAL.getNoReportingAlertCount24Hours(unitReading.unit.id) == 0) {
+							log.debug("briteBin Unit: " + unitReading.unit.id + " not reporting since " + new Date());
 							UnitDAL.saveAlert(unitReading.unit.id, unitReading.id, "BriteBin unit not reporting in past 24 hours");
 						}
 					}
@@ -71,7 +73,9 @@ public class UnitServices {
 	    Timer timer = new Timer("Timer");
 	    
 	    long delay = 1000L;
-	    long period = 1000L * 60L * 60L * 6L;  // Check every 6 hours
+	    long period = 1000L * 60L;  // Check every 1 minute
+//	    long period = 1000L * 60L * 60L;  // Check every 1 hour
+//	    long period = 1000L * 60L * 60L * 6L;  // Check every 6 hour
 	    timer.scheduleAtFixedRate(repeatedTask, delay, period);
 	}
 }

@@ -39,9 +39,9 @@ public class JavaMailServices {
 			SMTP_PASSWORD = SystemDAL.getSysConfigValue("SMTP-PASSWORD");
 			
 		} catch(SQLException ex) {
-			log.error("ERROR: failed to initialize Emailer");
-			throw ex;
-		}
+			log.error("ERROR: failed to initialize Emailer: " + ex.getMessage());
+			log.error(ex.getStackTrace());
+			throw ex;		}
 		
 		return true;
 	}
@@ -164,6 +164,7 @@ public class JavaMailServices {
 	}
 
 	private static Message prepareMessage(Session session, String myAccountEmail, String[] recepients, String subject, String msg) throws Exception {
+
 		try {
 			Message message = new MimeMessage(session);
 			message.setFrom(new InternetAddress(myAccountEmail));
@@ -179,4 +180,5 @@ public class JavaMailServices {
 			throw ex;
 		}
 	}
+
 }

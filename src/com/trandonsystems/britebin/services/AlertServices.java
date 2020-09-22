@@ -12,7 +12,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.trandonsystems.britebin.database.AlertDAL;
 import com.trandonsystems.britebin.model.Alert;
+import com.trandonsystems.britebin.model.Email;
 import com.trandonsystems.britebin.model.EmailDefn;
+import com.trandonsystems.britebin.model.PushNotification;
+import com.trandonsystems.britebin.model.PushNotificationDefn;
 import com.trandonsystems.britebin.model.sms.Sms;
 import com.trandonsystems.britebin.model.sms.SmsDefn;
 
@@ -20,8 +23,10 @@ public class AlertServices {
 
 	static Logger log = Logger.getLogger(AlertServices.class);
 	static Gson gson = new GsonBuilder().setPrettyPrinting().create();
+	
 	static List<EmailDefn> emailDefns;
 	static List<SmsDefn> smsDefns;
+	static List<PushNotificationDefn> pushNotificationDefns;
 
 	public AlertServices() throws Exception {
 		log.info("Constructor ...");
@@ -33,39 +38,83 @@ public class AlertServices {
 		}
 		
 		try {
-			// Load the email subjects and bodies
+			// Load the SMS text definitions
 			smsDefns = AlertDAL.getAlertSmsDefns();
 		} catch (Exception ex) {
 			log.error("AlertServices.Constructor() - getAlertSmsDefns() ERROR: " + ex.getMessage());
 		}
 		
+		try {
+			// Load the PushNotification definitions
+			pushNotificationDefns = AlertDAL.getPushNotificationDefns();
+		} catch (Exception ex) {
+			log.error("AlertServices.Constructor() - getPushNotificationDefns() ERROR: " + ex.getMessage());
+		}
+		
 		
 	}
 	
-	private EmailDefn getEmailDefn(int alertType, String locale) {
+	private EmailDefn getEmailDefn(int alertType, String locale) throws Exception {
 		
-		EmailDefn emailDefn = new EmailDefn();
-		
+		// Attempt to get the correct locale email definition
 		for (int i = 0; i < emailDefns.size(); i++) {
 			if(emailDefns.get(i).alertType == alertType && emailDefns.get(i).locale.contentEquals(locale)) {
 				return emailDefns.get(i);
 			}
 		}
 		
-		return emailDefn;
+		// If correct Local Email Definition not found, try and get the English Version 
+		locale = "en-IE";
+		for (int i = 0; i < emailDefns.size(); i++) {
+			if(emailDefns.get(i).alertType == alertType && emailDefns.get(i).locale.contentEquals(locale)) {
+				return emailDefns.get(i);
+			}
+		}
+		
+		// If no email definition found raise an error
+		throw new Exception("No Email Definition Template found for alertType: " + alertType + " and locale: " + locale);
 	}
 	
-	private SmsDefn getSmsDefn(int alertType, String locale) {
+	private SmsDefn getSmsDefn(int alertType, String locale) throws Exception {
 		
-		SmsDefn smsDefn = new SmsDefn();
-		
+		// Attempt to get the correct locale message definition
 		for (int i = 0; i < smsDefns.size(); i++) {
 			if(smsDefns.get(i).alertType == alertType && smsDefns.get(i).locale.contentEquals(locale)) {
 				return smsDefns.get(i);
 			}
 		}
 		
-		return smsDefn;
+		// If correct Local Email Definition not found, try and get the English Version 
+		locale = "en-IE";
+		for (int i = 0; i < smsDefns.size(); i++) {
+			if(smsDefns.get(i).alertType == alertType && smsDefns.get(i).locale.contentEquals(locale)) {
+				return smsDefns.get(i);
+			}
+		}
+
+		// if no sms definition found raise an error
+		throw new Exception("No SMS Definition Template found for alertType: " + alertType + " and locale: " + locale);
+	}
+	
+	private PushNotificationDefn getPushNotificationDefn(int alertType, String locale) throws Exception {
+		
+		// Attempt to get the correct locale message definition
+		for (int i = 0; i < pushNotificationDefns.size(); i++) {
+			if(pushNotificationDefns.get(i).alertType == alertType && pushNotificationDefns.get(i).locale.contentEquals(locale)) {
+				return pushNotificationDefns.get(i);
+			}
+		}
+		
+		// If correct Local Email Definition not found, try and get the English Version 
+		locale = "en-IE";
+		for (int i = 0; i < pushNotificationDefns.size(); i++) {
+			if(pushNotificationDefns.get(i).alertType == alertType && pushNotificationDefns.get(i).locale.contentEquals(locale)) {
+				return pushNotificationDefns.get(i);
+			}
+		}
+
+		// if no sms definition found raise an error
+		throw new Exception("No Push Notification Definition Template found for alertType: " + alertType + " and locale: " + locale);
 	}
 	
 	private String substitudeFields(String body, Alert alert) {
@@ -110,7 +159,7 @@ public class AlertServices {
 		log.debug("deviceType: " + alert.unit.deviceType.name);
 		log.debug("contentType: " + alert.unit.contentType.name);
 		
-		log.debug("Email body" + body);
+		log.debug("Email body: " + body);
 		
 		String newBody = body.replaceAll("@@alertType@@", alert.alertType.name);
 		newBody = newBody.replaceAll("@@alertDateTime@@", alertDateTimeStr);
@@ -120,6 +169,8 @@ public class AlertServices {
 		newBody = newBody.replaceAll("@@deviceType@@", alert.unit.deviceType.name);
 		newBody = newBody.replaceAll("@@contentType@@", alert.unit.contentType.name);
 		
+//		newBody = newBody.replaceAll("@@binFillLevel@@", alert.unitReading.percentFull);
+
 		// Plug damage report fields also
 		if (alert.damage != null) {
 			log.debug("damageStatus: " +  alert.damage.damageStatus.name);
@@ -143,7 +194,7 @@ public class AlertServices {
 		return newBody;
 	}
 	
-	public void email(Alert alert) throws Exception {
+	public void generateEmail(Alert alert) throws Exception {
 		
 		try {
 			log.debug("Email");
@@ -155,15 +206,13 @@ public class AlertServices {
 			log.debug("Get email body");
 			String emailBody = substitudeFields(emailDefn.body, alert);
 			
-			JavaMailServices.sendMail(alert.user.email, subject, emailDefn.htmlBody, emailBody);
+			AlertDAL.generateEmail(alert.id, alert.user.email, subject, emailDefn.htmlBody, emailBody);
 			
-			log.info("Email sent: " + alert.user.email + "    Msg: " + emailBody);
+			log.info("Email generated: alertId: " + alert.id + "    Email: " + alert.user.email + "    Msg: " + emailBody);
 			
 		} catch (SQLException ex) {
 			String errorMsg = "ERROR: failed to send email for alertId: " + alert.id + " - Email: " + alert.user.email + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-//			AlertDAL.markEmailAsFailed(alert.id, 1, alert.user.email, errorMsg);
-			throw ex;
 		}
 	}
 	
@@ -180,40 +229,55 @@ public class AlertServices {
 			
 			String phoneNo = UtilServices.stripPhoneNo(alert.user.mobile);
 			
+			if (phoneNo == null || phoneNo.length() < 7) {
+				throw new Exception("Invalid phone number: " + phoneNo + " for alertId: " + alert.id);
+			}
 			AlertDAL.generateSms(alert.id, phoneNo, smsMessage);
 						
-			log.info("Email sent: " + alert.user.email + "    Msg: " + smsMessage);
+			log.info("SMS generated: alertId: " + alert.id + "   phoneNo: " + phoneNo + "    Msg: " + smsMessage);
 			
 		} catch (Exception ex) {
 			String errorMsg = "ERROR: failed to generate SMS for alertId: " + alert.id + " - SMS Number: " + alert.user.mobile + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-//			AlertDAL.markSmsAlertAsFailed(alert.id, 2, alert.user.email, errorMsg);
-			throw ex;
 		}
 	}
 	
 	
-	public void whatsApp(Alert alert) throws Exception {
+	public void generateWhatsApp(Alert alert) throws Exception {
 		// Not implemented
 		try {
 
 		} catch (Exception ex) {
 			String errorMsg = "ERROR: failed to send WhatsApp for alertId: " + alert.id + " - Mobile Number: " + alert.user.mobile + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-//			AlertDAL.markWhatsAppAsFailed(alert.id, 3, alert.user.email, errorMsg);
 			throw ex;
 		}	
 	}
 	
 	
-	public void push(Alert alert) throws Exception {
+	public void generatePush(Alert alert) throws Exception {
 		// Not implemented
 		try {
 
+			log.debug("generatePushNotification");
+			PushNotificationDefn pushNotificationDefn = getPushNotificationDefn(alert.alertType.id, alert.user.locale.abbr);
+	
+			log.debug("Get push notification title/body");
+			String title = substitudeFields(pushNotificationDefn.title, alert);
+			String body = substitudeFields(pushNotificationDefn.body, alert);
+			
+			String gcmToken = alert.user.gcmToken;
+			if (gcmToken == null) {
+				throw new Exception("Invalid gcmToken: " + gcmToken + "  for alertId: " + alert.id);
+			}
+			
+			AlertDAL.generatePushNotification(alert.id, gcmToken, title, body);
+						
+			log.info("Push Notification generated: alertId: " + alert.id + "    title: " + title + "    body: " + body + "   gcmToken: " + gcmToken);
+			
 		} catch (Exception ex) {
-			String errorMsg = "ERROR: failed to send Push Notification for alertId: " + alert.id + " - Mobile Number: " + alert.user.mobile + "  error: " + ex.getMessage();
+			String errorMsg = "ERROR: failed to send Push Notification for alertId: " + alert.id  + "   gcmToken: " + alert.user.gcmToken + "   error: " + ex.getMessage();
 			log.error(errorMsg);
-//			AlertDAL.markPushAsFailed(alert.id, 4, alert.user.email, errorMsg);
 			throw ex;
 		}	
 	}
@@ -226,7 +290,7 @@ public class AlertServices {
 			
 			if (alert.alertDefn.notifyByEmail) {
 				log.info("Notify by email");
-				email(alert);
+				generateEmail(alert);
 			}
 			if (alert.alertDefn.notifyBySms) {
 				log.info("Notify by SMS");
@@ -234,11 +298,11 @@ public class AlertServices {
 			}
 			if (alert.alertDefn.notifyByWhatsApp) {
 				log.info("Notify by WhatsApp");
-				whatsApp(alert);
+				generateWhatsApp(alert);
 			}
 			if (alert.alertDefn.notifyByPushNotification) {
 				log.info("Notify by Push Notification");
-				push(alert);
+				generatePush(alert);
 			}
 
 			// Mark alert as processed
@@ -262,10 +326,10 @@ public class AlertServices {
 				processAlert(waitingAlerts.get(i));
 			}
 			
-//			senEmails();
+			sendEmails();
 			sendSms();
 //			sendWhatsApp();
-//			sendPushNotifications();
+			sendPushNotifications();
 			
 		} catch (Exception ex) {
 			log.error("processWaitingAlerts: ERROR: " + ex.getMessage());
@@ -276,21 +340,53 @@ public class AlertServices {
 	
 	public void sendEmails() {
 		
+		log.info("Send waiting Emails");
+		try {
+			
+			// Get list of unsent Mails
+			List<Email> emailList = AlertDAL.getWaitingEmails();
+			
+			int emailCount =  0;
+			for(int i = 0; i < emailList.size(); i++) {
+				Email email = emailList.get(i);
+				try {
+					JavaMailServices.sendMail(email.emailAddr, email.subject, email.htmlBody, email.body);
+					AlertDAL.markEmailAlertAsSent(email.id);
+					emailCount++;
+				} catch(Exception ex) {
+					AlertDAL.markEmailAlertAsFailed(email.id, ex.getMessage());
+				}
+			}
+			log.info("All waiting Emails (" + emailList.size() + ") Processed - " + emailCount +  " successfully sent");
+		} catch (Exception ex) {
+			log.error("processWaitingAlerts: ERROR: " + ex.getMessage());
+		}			
+		
 	}
 	
 	
 	public void sendSms() {
+		
+		Sms sms = new Sms();;
 		try {
 			
 			// Get list of unsent sms
 			List<Sms> smsList = AlertDAL.getWaitingSms();
 			
+			int smsCount = 0;
 			for(int i = 0; i < smsList.size(); i++) {
-				SmsServices.sendSMS(smsList.get(i));
+				sms = smsList.get(i);
+				try {
+					SmsServices.sendSMS(sms);
+					smsCount++;
+				} catch (Exception ex) {
+					AlertDAL.markSmsAlertAsFailed(sms.id, ex.getMessage());
+				}
 			}
+			log.info("All waiting SMS's (" +  smsList.size() + ") Processed - " + smsCount +  " successfully sent");
 			
 		} catch (SQLException ex) {
-			log.error("processWaitingAlerts: ERROR: " + ex.getMessage());
+			log.error("sendSms: ERROR: " + ex.getMessage());
 		}		
 	}
 	
@@ -300,7 +396,28 @@ public class AlertServices {
 	}	
 
 	public void sendPushNotifications() {
-		
+		PushNotification pushNotification = new PushNotification();;
+		try {
+			
+			// Get list of unsent push notifications
+			List<PushNotification> pushNotifications = AlertDAL.getWaitingPushNotifications();
+			
+			int pushCount = 0;
+			for(int i = 0; i < pushNotifications.size(); i++) {
+				pushNotification = pushNotifications.get(i);
+				try {
+					PushNotificationServices.pushNotificationHttp(pushNotification.gcmToken, pushNotification.title, pushNotification.body, pushNotification.id);
+					pushCount++;
+				} catch (Exception ex) {
+					log.error("Push notification failed - gcmToken: " + pushNotification.gcmToken + " - " + ex.getMessage());
+					AlertDAL.markPushNotificationAlertAsFailed(pushNotification.id, ex.getMessage());
+				}
+			}
+			log.info("All waiting SMS's (" +  pushNotifications.size() + ") Processed - " + pushCount +  " successfully sent");
+			
+		} catch (SQLException ex) {
+			log.error("sendPushNotifications: ERROR: " + ex.getMessage());
+		}			
 	}	
 
 }

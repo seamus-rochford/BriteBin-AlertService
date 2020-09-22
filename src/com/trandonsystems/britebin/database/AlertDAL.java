@@ -13,7 +13,10 @@ import org.apache.log4j.Logger;
 
 import com.trandonsystems.britebin.model.Alert;
 import com.trandonsystems.britebin.model.AlertDefn;
+import com.trandonsystems.britebin.model.Email;
 import com.trandonsystems.britebin.model.EmailDefn;
+import com.trandonsystems.britebin.model.PushNotification;
+import com.trandonsystems.britebin.model.PushNotificationDefn;
 import com.trandonsystems.britebin.model.Unit;
 import com.trandonsystems.britebin.model.User;
 import com.trandonsystems.britebin.model.sms.Sms;
@@ -26,7 +29,7 @@ public class AlertDAL {
 
 	static Logger log = Logger.getLogger(AlertDAL.class);
 
-	
+
 	private static Alert setAlertValues(ResultSet rs) throws SQLException  {
 
 		Alert alert = new Alert();
@@ -516,6 +519,40 @@ public class AlertDAL {
 	}
 		
 	
+	public static List<Alert> getWaitingAlertsNoReadings() throws SQLException {
+		
+		log.info("AlertDAL.getWaitingAlertsNoReadings()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		List<Alert> alerts = new ArrayList<Alert>();
+
+		String spCall = "{ call GetAlertsTriggeredNoReadings() }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			ResultSet rs = spStmt.executeQuery();
+
+			while (rs.next()) {
+				Alert alert = setAlertValues(rs);
+				
+				alerts.add(alert);
+			}
+		} catch (SQLException ex) {
+			log.error("ERROR: " + ex.getMessage());
+			throw ex;
+		}
+
+		log.debug("No Alerts: " + alerts.size());
+		return alerts;
+	}
+		
+	
 	public static List<Alert> getWaitingAlerts() throws SQLException {
 		
 		log.info("AlertDAL.getWaitingAlerts()");
@@ -537,6 +574,7 @@ public class AlertDAL {
 			alerts.addAll(getWaitingAlertsServiceDoorOpen());
 			alerts.addAll(getWaitingAlertsFlapStuckOpen());
 			alerts.addAll(getWaitingAlertsDamage());
+			alerts.addAll(getWaitingAlertsNoReadings());
 			
 		} catch (SQLException ex) {
 			log.error("ERROR: " + ex.getMessage());
@@ -557,7 +595,7 @@ public class AlertDAL {
 
 		List<EmailDefn> emailDefns = new ArrayList<EmailDefn>();
 
-		String spCall = "{ call GetAlertEmails() }";
+		String spCall = "{ call GetAlertEmailDefns() }";
 		log.info("SP Call: " + spCall);
 
 		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
@@ -584,6 +622,7 @@ public class AlertDAL {
 		log.debug("No Email definitions: " + emailDefns.size());
 		return emailDefns;		
 	}
+
 	
 	public static List<SmsDefn> getAlertSmsDefns() throws Exception{
 		log.info("AlertDAL.getAlertSmsDefns()");
@@ -595,7 +634,7 @@ public class AlertDAL {
 
 		List<SmsDefn> smsDefns = new ArrayList<SmsDefn>();
 
-		String spCall = "{ call GetAlertsmsDefns() }";
+		String spCall = "{ call GetAlertSmsDefns() }";
 		log.info("SP Call: " + spCall);
 
 		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
@@ -621,6 +660,46 @@ public class AlertDAL {
 		
 		return smsDefns;		
 	}
+	
+	
+	public static List<PushNotificationDefn> getPushNotificationDefns() throws Exception{
+		log.info("AlertDAL.getPushNotificationDefns()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		List<PushNotificationDefn> pushNotificationDefns = new ArrayList<PushNotificationDefn>();
+
+		String spCall = "{ call GetAlertPushDefns() }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			ResultSet rs = spStmt.executeQuery();
+
+			while (rs.next()) {
+				PushNotificationDefn pushNotificationDefn = new PushNotificationDefn();
+				
+				pushNotificationDefn.alertType = rs.getInt("alertType");
+				pushNotificationDefn.locale = rs.getString("locale");
+				pushNotificationDefn.title = rs.getString("title");
+				pushNotificationDefn.body = rs.getString("body");
+				
+				pushNotificationDefns.add(pushNotificationDefn);
+			}
+		} catch (SQLException ex) {
+			log.error("ERROR: " + ex.getMessage());
+			throw ex;
+		}
+
+		log.debug("No. PushNotification definitions: " + pushNotificationDefns.size());
+		
+		return pushNotificationDefns;		
+	}
+	
 	
 	public static void markAlertAsProcessed(int alertId) throws SQLException {
 		log.info("AlertDAL.markAlertAsProcessed()");
@@ -670,6 +749,130 @@ public class AlertDAL {
 //		}	
 //	}	
 //
+
+	public static int generateEmail(int alertId, String email, String subject, boolean htmlBody, String body) throws SQLException {
+		log.info("AlertDAL.generateEmail()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call InsertEmail(?, ?, ?, ?, ?, ?) }";
+		log.info("SP Call: " + spCall);
+
+		int id = 0;
+		
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, id);
+			spStmt.setInt(2, alertId);
+			spStmt.setString(3, email);
+			spStmt.setString(4, subject);
+			spStmt.setInt(5, htmlBody ? 1 : 0);
+			spStmt.setString(6, body);
+			spStmt.executeUpdate();
+			
+			id = spStmt.getInt(1);
+			
+			return id;
+
+		} catch (SQLException ex) {
+			log.error("ERROR - generateEmail: " + ex.getMessage());
+			throw ex;
+		}			
+	}
+
+	public static void markEmailAlertAsFailed(int id, String comment) {
+		log.info("AlertDAL.markEmailAlertAsFailed()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call MarkEmailFailed(?, ?) }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, id);
+			spStmt.setString(2, comment);
+			spStmt.executeUpdate();
+
+		} catch (SQLException ex) {
+			log.error("ERROR - markEmailAlertAsFailed: " + ex.getMessage());
+		}			
+	}
+	
+		
+	public static void markEmailAlertAsSent(int id) {
+		log.info("AlertDAL.markEmailAlertAsSent()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call MarkEmailAsSent(?) }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, id);
+			spStmt.executeUpdate();
+
+		} catch (SQLException ex) {
+			log.error("ERROR - markEmailAlertAsSent: " + ex.getMessage());
+		}			
+	}
+	
+	
+	public static List<Email> getWaitingEmails() throws SQLException {
+		
+		log.info("AlertDAL.getWaitingEmail()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		List<Email> emailList = new ArrayList<Email>();
+
+		String spCall = "{ call getWaitingEmail() }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			ResultSet rs = spStmt.executeQuery();
+
+			while (rs.next()) {
+				Email email = new Email();
+				
+				email.id = rs.getInt("id");
+				email.alertId = rs.getInt("alertId");
+				email.emailAddr = rs.getString("email");
+				email.subject = rs.getString("subject");
+				email.htmlBody = (rs.getInt("htmlBody") == 1);
+				email.body = rs.getString("body");
+				
+				emailList.add(email);
+			}
+		} catch (SQLException ex) {
+			log.error("ERROR: " + ex.getMessage());
+			throw ex;
+		}
+
+		log.debug("No emails: " + emailList.size());
+		return emailList;
+	}
+		
+	
+	
 	public static int generateSms(int alertId, String phoneNo, String message) throws SQLException {
 		log.info("AlertDAL.generateSms()");
 		try {
@@ -765,6 +968,30 @@ public class AlertDAL {
 		}			
 	}	
 
+	public static void markSmsAlertAsFailed(int id, String comment) {
+		log.info("AlertDAL.markSmsAlertAsFailed()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call MarkSmsFailed(?, ?) }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, id);
+			spStmt.setString(2, comment);
+			spStmt.executeUpdate();
+
+		} catch (SQLException ex) {
+			log.error("ERROR - markSmsAlertAsFailed: " + ex.getMessage());
+		}			
+	}
+	
+	
 	public static List<Sms> getWaitingSms() throws SQLException {
 		
 		log.info("AlertDAL.getWaitingSms()");
@@ -787,6 +1014,7 @@ public class AlertDAL {
 			while (rs.next()) {
 				Sms sms = new Sms();
 				
+				sms.alertId = rs.getInt("alertId");
 				sms.id = rs.getInt("id");
 				sms.phoneNo = rs.getString("phoneNo");
 				sms.message = rs.getString("message");
@@ -802,6 +1030,130 @@ public class AlertDAL {
 		return smsList;
 	}
 		
+	public static int generatePushNotification(int alertId, String gcmToken, String title, String body) throws SQLException {
+		log.info("AlertDAL.generatePushNotification()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call InsertPushNotification(?, ?, ?, ?, ?) }";
+		log.info("SP Call: " + spCall);
+
+		int id = 0;
+		
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, id);
+			spStmt.setInt(2,  alertId);
+			spStmt.setString(3, gcmToken);
+			spStmt.setString(4, title);
+			spStmt.setString(5, body);
+			spStmt.executeUpdate();
+			
+			id = spStmt.getInt(1);
+			
+			return id;
+
+		} catch (SQLException ex) {
+			log.error("ERROR - generateSms: " + ex.getMessage());
+			throw ex;
+		}			
+	}
+
+	public static List<PushNotification> getWaitingPushNotifications() throws SQLException {
+		
+		log.info("AlertDAL.getWaitingPushNotifications()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		List<PushNotification> pushNotifications = new ArrayList<PushNotification>();
+
+		String spCall = "{ call getWaitingPushNotifications() }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			ResultSet rs = spStmt.executeQuery();
+
+			while (rs.next()) {
+				PushNotification pushNotification = new PushNotification();
+				
+				pushNotification.alertId = rs.getInt("alertId");
+				pushNotification.id = rs.getInt("id");
+				pushNotification.gcmToken = rs.getString("gcmToken");
+				pushNotification.title = rs.getString("title");
+				pushNotification.body = rs.getString("body");
+				
+				pushNotifications.add(pushNotification);
+			}
+		} catch (SQLException ex) {
+			log.error("ERROR: " + ex.getMessage());
+			throw ex;
+		}
+
+		log.debug("No Push  Notifications: " + pushNotifications.size());
+		return pushNotifications;
+	}
+	
+	public static void markPushNotificationAlertAsFailed(int id, String comment) {
+		log.info("AlertDAL.markPushNotificationAlertAsFailed()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call MarkPushNotificationFailed(?, ?) }";
+		log.info("SP Call: " + spCall);
+
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, id);
+			spStmt.setString(2, comment);
+			spStmt.executeUpdate();
+
+		} catch (SQLException ex) {
+			log.error("ERROR - markPushNotificationAlertAsFailed: " + ex.getMessage());
+		}			
+	}
+	
+	public static void savePushNotificationResponse(int pushNotificationId, int httpResponseCode, String httpResponseBody) throws SQLException {
+		
+		log.info("AlertDAL.savePushNotificationResponse()");
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception ex) {
+			log.error("ERROR: " + ex.getMessage());
+		}
+
+		String spCall = "{ call SavePushNotificationResponse(?, ?, ?) }";
+		log.info("SP Call: " + spCall);
+		
+		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
+				CallableStatement spStmt = conn.prepareCall(spCall)) {
+
+			spStmt.setInt(1, pushNotificationId);
+			spStmt.setInt(2, httpResponseCode);
+			spStmt.setString(3, httpResponseBody);
+			spStmt.executeUpdate();
+			log.debug("Push Notification Response saved");
+
+			return;
+
+		} catch (SQLException ex) {
+			log.error("ERROR - savePushNotificationResponse: " + ex.getMessage());
+			throw ex;
+		}			
+	}	
+
 	
 
 }

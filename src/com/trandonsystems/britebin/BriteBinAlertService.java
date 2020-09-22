@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 
 import com.trandonsystems.britebin.services.AlertServices;
 import com.trandonsystems.britebin.services.JavaMailServices;
+import com.trandonsystems.britebin.services.PushNotificationServices;
 import com.trandonsystems.britebin.services.SmsServices;
 import com.trandonsystems.britebin.services.UnitServices;
 
@@ -15,7 +16,7 @@ public class BriteBinAlertService {
 	static Logger log = Logger.getLogger(BriteBinAlertService.class);
 	
 	// Set the scheduling parameters
-	private static int intervalDelay= 1 * 60 * 1000; // Repeat every 5 minutes 
+	private static int intervalDelay= 60 * 1000; // Repeat every 1 minutes 
 		
 	public static void main(String[] args) {
 
@@ -33,15 +34,17 @@ public class BriteBinAlertService {
 		
         try {
         	
-        	// Check if any units are not reporting
+        	// Check if any units are not reporting - this is scheduled to check every 6 hours
         	UnitServices.scheduleCheckUnits();
         	
 			JavaMailServices.initializeEmailer();
 			SmsServices.initializeSms();
+			PushNotificationServices.initializePushNotification();
  
 			AlertServices alertServices = new AlertServices();
 
 			while (true) {
+            	
             	log.info("Processing waiting alerts ...");
 
     			alertServices.processWaitingAlerts();

@@ -133,6 +133,8 @@ public class UserDAL {
 					user.modifiedDate = modifiedDateInstant;
 				}
 				user.modifiedBy = rs.getInt("modifiedBy");
+				
+				user.gcmToken = rs.getString("gcmToken");
 
 			}
 

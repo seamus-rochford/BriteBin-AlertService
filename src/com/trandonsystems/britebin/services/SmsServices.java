@@ -32,7 +32,7 @@ public class SmsServices {
 	static String SMS_USERNAME = "demo7777n";
 	static String SMS_PASSWORD = "?7&mNbq6";
 	static String SMS_SENDER = "SMSInfo";
-	static String SMS_DLR_URL = "http://161.35.32.177:8080/BriteBin/api/sms";
+	static String SMS_DLR_URL = "http://161.35.32.177:8080/BriteBin/api/sms/dlr";
 	
 	static Logger log = Logger.getLogger(SmsServices.class);
 	static Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -40,13 +40,26 @@ public class SmsServices {
 	public static boolean initializeSms() throws Exception {
 		try {
 		
-			SMS_URL = SystemDAL.getSysConfigValue("SMS-URL");
-			SMS_USERNAME = SystemDAL.getSysConfigValue("SMS-USERNAME");
-			SMS_PASSWORD = SystemDAL.getSysConfigValue("SMS-PASSWORD");
-			SMS_DLR_URL = SystemDAL.getSysConfigValue("SMS-DLR-URL");
+			String dbSmsUrl = SystemDAL.getSysConfigValue("SMS-URL");
+			if (dbSmsUrl != null) {
+				SMS_URL = dbSmsUrl;
+			}
+			String dbSmsUsername = SystemDAL.getSysConfigValue("SMS-USERNAME");
+			if (dbSmsUsername != null) {
+				SMS_USERNAME = dbSmsUsername;
+			}
+			String dbSmsPwd = SystemDAL.getSysConfigValue("SMS-PASSWORD");
+			if (dbSmsPwd != null) {
+				SMS_PASSWORD = dbSmsPwd;
+			}
+			String dbSmsDlrUrl = SystemDAL.getSysConfigValue("SMS-DLR-URL");
+			if (dbSmsDlrUrl != null) {
+				SMS_DLR_URL = dbSmsDlrUrl;
+			}
 			
 		} catch(SQLException ex) {
-			log.error("ERROR: failed to initialize SMS Sender");
+			log.error("ERROR: Failed to initialize SMS Sender: " + ex.getMessage());
+			log.error(ex.getStackTrace());
 			throw ex;
 		}
 		
@@ -54,7 +67,7 @@ public class SmsServices {
 	}
 	
 		
-	public static boolean sendSMS(String phoneNumber, String msg, int smsId) {
+	public static boolean sendSMS(String phoneNumber, String msg, int smsId) throws Exception {
 		
 		String userPwd = SMS_USERNAME + ":" + SMS_PASSWORD;
 		String basicAuthorization = "Basic " + UtilServices.getBase64(userPwd);
@@ -100,7 +113,7 @@ public class SmsServices {
     			.add("sms", smsSender)
     			.build();
     	
-    	log.debug("\nRequest Body: " + reqBody.toString());
+    	log.debug("Request Body: " + reqBody.toString());
     	
     	httpPost.setEntity(new StringEntity(reqBody.toString(), ContentType.APPLICATION_JSON));
     	
@@ -121,17 +134,17 @@ public class SmsServices {
     		return true;
     	} catch (ClientProtocolException ex) {
     		log.error("HTTP Client Protocol Exception: " + ex.getMessage());
-    		return false;
+    		throw new Exception("HTTP Client Protocol Exception", ex);
     	} catch (IOException exIO) {
     		log.error("HTTP IO Exception: " + exIO.getMessage());
-    		return false;
+    		throw new Exception("HTTP IO Exception", exIO);
     	} catch (SQLException sqlEx) {
     		log.error("SQL Exception: " + sqlEx.getMessage());
-    		return false;
+    		throw new Exception("SQL Exception", sqlEx);
     	}
 	}
 	
-	public static boolean sendSMS(Sms sms) {
+	public static boolean sendSMS(Sms sms) throws Exception {
 		return sendSMS(sms.phoneNo, sms.message, sms.id);
 	}
 	
