@@ -25,7 +25,7 @@ public class UnitServices {
 		try {
 			log.info("UnitServices.checkUnits()");
 
-			List<UnitReading> unitReadings = UnitDAL.getLatestReadings(1);
+			List<UnitReading> unitReadings = UnitDAL.getLatestReadings();
 			
 			for (UnitReading unitReading : unitReadings) {
 				
@@ -46,10 +46,10 @@ public class UnitServices {
 					}
 
 				} else if (unitReading.unit.deviceType.id == 2) {
-					// BriteBin Sensor - it reports multiple time s per hour - report if no readings after 24 hour
+					// BriteBin Sensor - it reports multiple times per hour - report if no readings after 24 hour
 				
 					if (hoursSinceLastReading > 24) {
-						// Check if alert in past 24 hours - only report this once a day
+						// Check if alert flagged in past 24 hours - only report this once a day
 						if (UnitDAL.getNoReportingAlertCount24Hours(unitReading.unit.id) == 0) {
 							log.debug("briteBin Unit: " + unitReading.unit.id + " not reporting since " + new Date());
 							UnitDAL.saveAlert(unitReading.unit.id, unitReading.id, "BriteBin unit not reporting in past 24 hours");

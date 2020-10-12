@@ -102,10 +102,13 @@ public class PushNotificationServices {
     public static boolean pushNotificationHttp(String deviceToken, String title, String body, int pushNotificationId) throws Exception {
     	try {
     		HttpClient client = HttpClientBuilder.create().build();
-    		HttpPost post = new HttpPost("https://fcm.googleapis.com/fcm/send");
+    		HttpPost post = new HttpPost(FCM_API_URL);
+    		log.debug("FCM-API-URL: " + FCM_API_URL);
+    		
     		post.setHeader("Content-type", "application/json");
     		post.setHeader("Authorization", "key=" + FCM_AUTH_KEY);
-
+    		log.debug("Authorization: " + FCM_AUTH_KEY);
+    		
     		JsonObject message = new JsonObject();
     		message.addProperty("to", deviceToken);
     		message.addProperty("priority", "high");

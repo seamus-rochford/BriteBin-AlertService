@@ -159,7 +159,7 @@ public class AlertServices {
 		log.debug("deviceType: " + alert.unit.deviceType.name);
 		log.debug("contentType: " + alert.unit.contentType.name);
 		
-		log.debug("Email body: " + body);
+		log.debug("Text before substitution: " + body);
 		
 		String newBody = body.replaceAll("@@alertType@@", alert.alertType.name);
 		newBody = newBody.replaceAll("@@alertDateTime@@", alertDateTimeStr);
@@ -190,11 +190,11 @@ public class AlertServices {
 			newBody = newBody.replaceAll("@@damageHistory@@", history);
 		}
 		
-		log.debug("New Body: " + newBody);
+		log.debug("Text after substitution: " + newBody);
 		return newBody;
 	}
 	
-	public void generateEmail(Alert alert) throws Exception {
+	public void generateEmail(Alert alert) {
 		
 		try {
 			log.debug("Email");
@@ -210,14 +210,14 @@ public class AlertServices {
 			
 			log.info("Email generated: alertId: " + alert.id + "    Email: " + alert.user.email + "    Msg: " + emailBody);
 			
-		} catch (SQLException ex) {
+		} catch (Exception ex) {
 			String errorMsg = "ERROR: failed to send email for alertId: " + alert.id + " - Email: " + alert.user.email + "  error: " + ex.getMessage();
 			log.error(errorMsg);
 		}
 	}
 	
 	
-	public void generateSms(Alert alert) throws Exception {
+	public void generateSms(Alert alert) {
 		
 		try {
 
@@ -243,19 +243,18 @@ public class AlertServices {
 	}
 	
 	
-	public void generateWhatsApp(Alert alert) throws Exception {
+	public void generateWhatsApp(Alert alert) {
 		// Not implemented
 		try {
 
 		} catch (Exception ex) {
 			String errorMsg = "ERROR: failed to send WhatsApp for alertId: " + alert.id + " - Mobile Number: " + alert.user.mobile + "  error: " + ex.getMessage();
 			log.error(errorMsg);
-			throw ex;
 		}	
 	}
 	
 	
-	public void generatePush(Alert alert) throws Exception {
+	public void generatePush(Alert alert) {
 		// Not implemented
 		try {
 
@@ -272,13 +271,12 @@ public class AlertServices {
 			}
 			
 			AlertDAL.generatePushNotification(alert.id, gcmToken, title, body);
-						
+			
 			log.info("Push Notification generated: alertId: " + alert.id + "    title: " + title + "    body: " + body + "   gcmToken: " + gcmToken);
 			
 		} catch (Exception ex) {
 			String errorMsg = "ERROR: failed to send Push Notification for alertId: " + alert.id  + "   gcmToken: " + alert.user.gcmToken + "   error: " + ex.getMessage();
 			log.error(errorMsg);
-			throw ex;
 		}	
 	}
 	
@@ -380,6 +378,7 @@ public class AlertServices {
 					SmsServices.sendSMS(sms);
 					smsCount++;
 				} catch (Exception ex) {
+					log.error("sendSms failed: " + ex.getMessage());
 					AlertDAL.markSmsAlertAsFailed(sms.id, ex.getMessage());
 				}
 			}
@@ -405,6 +404,7 @@ public class AlertServices {
 			int pushCount = 0;
 			for(int i = 0; i < pushNotifications.size(); i++) {
 				pushNotification = pushNotifications.get(i);
+		    	log.debug("pushNotification: " + gson.toJson(pushNotification));
 				try {
 					PushNotificationServices.pushNotificationHttp(pushNotification.gcmToken, pushNotification.title, pushNotification.body, pushNotification.id);
 					pushCount++;
@@ -413,7 +413,7 @@ public class AlertServices {
 					AlertDAL.markPushNotificationAlertAsFailed(pushNotification.id, ex.getMessage());
 				}
 			}
-			log.info("All waiting SMS's (" +  pushNotifications.size() + ") Processed - " + pushCount +  " successfully sent");
+			log.info("All waiting Push Notifications (" +  pushNotifications.size() + ") Processed - " + pushCount +  " successfully sent");
 			
 		} catch (SQLException ex) {
 			log.error("sendPushNotifications: ERROR: " + ex.getMessage());

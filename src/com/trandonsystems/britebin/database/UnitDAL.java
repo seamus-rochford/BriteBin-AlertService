@@ -61,7 +61,7 @@ public class UnitDAL {
 	}
 	
 		
-	public static List<UnitReading> getLatestReadings(int userFilterId) throws SQLException {
+	public static List<UnitReading> getLatestReadings() throws SQLException {
 
 		log.info("UnitDAL.getLatestReadings(userFilterId)");
 		try {
@@ -72,14 +72,12 @@ public class UnitDAL {
 
 		List<UnitReading> unitReadings = new ArrayList<UnitReading>();
 
-		String spCall = "{ call GetLatestReadings(?, ?) }";
+		String spCall = "{ call GetLatestReadingsAlerts() }";
 		log.info("SP Call: " + spCall);
 
 		try (Connection conn = DriverManager.getConnection(UtilDAL.connUrl, UtilDAL.username, UtilDAL.password);
 				CallableStatement spStmt = conn.prepareCall(spCall)) {
 
-			spStmt.setInt(1, userFilterId);
-			spStmt.setInt(2, 0); // Active Only
 			ResultSet rs = spStmt.executeQuery();
 
 			while (rs.next()) {

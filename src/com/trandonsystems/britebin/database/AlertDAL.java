@@ -192,6 +192,8 @@ public class AlertDAL {
 		}
 		user.modifiedBy = rs.getInt("users.modifiedBy");
 		
+		user.gcmToken = rs.getString("users.gcmToken");
+		
 		alert.user = user;
 		
 		int damageId = rs.getInt("alerts.damageId");

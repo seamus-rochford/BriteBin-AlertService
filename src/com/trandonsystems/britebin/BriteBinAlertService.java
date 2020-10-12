@@ -29,7 +29,7 @@ public class BriteBinAlertService {
 		File logoImage = new File(logoFileName);
 		
 		if(!(logoImage.exists() && !logoImage.isDirectory())) { 
-		    log.error("logo image missing from working directory: " + workingDir);
+		    log.error("logo image (logo.png) missing from working directory: " + workingDir);
 		}
 		
         try {

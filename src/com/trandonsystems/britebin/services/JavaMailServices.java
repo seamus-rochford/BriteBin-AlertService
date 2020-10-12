@@ -41,7 +41,8 @@ public class JavaMailServices {
 		} catch(SQLException ex) {
 			log.error("ERROR: failed to initialize Emailer: " + ex.getMessage());
 			log.error(ex.getStackTrace());
-			throw ex;		}
+			throw ex;		
+		}
 		
 		return true;
 	}
@@ -56,24 +57,43 @@ public class JavaMailServices {
 //			properties.put("mail.smtp.host", SMTP_HOST);
 //			properties.put("mail.smtp.port", SMTP_PORT);
 
-			Properties properties = System.getProperties();
-			properties.setProperty("mail.smtp.host", SMTP_HOST);
-			
-			properties.put("mail.smtp.port", SMTP_PORT);
-			properties.put("mail.smtp.auth", "true");
-			properties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-
 			String myAccountEmail = SMTP_ACCOUNT_EMAIL;
 			String password = SMTP_PASSWORD;
 			
-			Session session = Session.getInstance(properties, new Authenticator() {
-				@Override
-				protected PasswordAuthentication getPasswordAuthentication() {
-					return new PasswordAuthentication(myAccountEmail, password);
-				}
-			});
+			log.debug("sendMail - start");
+			Properties properties = System.getProperties();
+			properties.setProperty("mail.smtp.host", SMTP_HOST);
+			log.debug("sendMail - mail.smtp.host set: " + SMTP_HOST);
+			
+			properties.put("mail.smtp.port", SMTP_PORT);
+			log.debug("sendMail - mail.smtp.port set: " + SMTP_PORT);
+			if (!password.equals("")) {
+				properties.put("mail.smtp.auth", "true");
+				log.debug("sendMail - mail.smtp.auth set: " + "true");
+			} else {
+				properties.put("mail.smtp.auth", "false");
+				log.debug("sendMail - mail.smtp.auth set: " + "false");
+			}
+			properties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+			log.debug("sendMail - mail.smtp.socketFactory.class set: " + "javax.net.ssl.SSLSocketFactory");
+
+			Session session = Session.getDefaultInstance(properties, null);
+			if (!password.equals("")) {
+				session = Session.getInstance(properties, new Authenticator() {
+					@Override
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(myAccountEmail, password);
+					}
+				});
+				log.debug("sendMail - Authentication Session created");
+			} else {
+				log.debug("sendMail - Session created without authentication");
+			}
+			
+			log.debug("sendMail - prepareMessage");
 			
 			Message message = prepareMessage(session, myAccountEmail, recepient, subject, htmlBody, body);
+			log.debug("sendMail - prepareMessage complete");
 			
 			Transport.send(message);
 			

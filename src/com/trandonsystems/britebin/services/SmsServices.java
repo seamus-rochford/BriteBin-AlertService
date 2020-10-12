@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.trandonsystems.britebin.database.AlertDAL;
 import com.trandonsystems.britebin.database.SystemDAL;
 import com.trandonsystems.britebin.model.sms.Sms;
@@ -77,7 +78,7 @@ public class SmsServices {
     			.setConnectionManager(connManager)
     			.build();		
     	
-    	log.debug("SMS-URL :" + SMS_URL);
+    	log.debug("SMS-URL: " + SMS_URL);
     	log.debug("Authentication: " + basicAuthorization);
     	HttpPost httpPost = new HttpPost(SMS_URL);
     	httpPost.addHeader(HttpHeaders.AUTHORIZATION, basicAuthorization);
@@ -113,7 +114,7 @@ public class SmsServices {
     			.add("sms", smsSender)
     			.build();
     	
-    	log.debug("Request Body: " + reqBody.toString());
+    	log.debug("Request Body: " + gson.toJson(reqBody.toString()));
     	
     	httpPost.setEntity(new StringEntity(reqBody.toString(), ContentType.APPLICATION_JSON));
     	
@@ -126,10 +127,14 @@ public class SmsServices {
     		String responseStr = EntityUtils.toString(response.getEntity());
     		log.debug("\nResponse Body: " + responseStr);
     		
-    		SmsResponse smsRespone =  gson.fromJson(responseStr, SmsResponse.class);
-    		log.debug("\nResponse: " + smsRespone.toString());
+    		try {
+    			SmsResponse smsRespone =  gson.fromJson(responseStr, SmsResponse.class);
+    			log.debug("\nResponse: " + smsRespone.toString());
     		
-    		AlertDAL.saveSmsResponse(smsId, httpResponseCode, smsRespone);
+    			AlertDAL.saveSmsResponse(smsId, httpResponseCode, smsRespone);
+    		} catch (JsonSyntaxException ex) {
+    			log.error("Invalid response body sent from SMS provider: " + responseStr);
+    		}
     		
     		return true;
     	} catch (ClientProtocolException ex) {
