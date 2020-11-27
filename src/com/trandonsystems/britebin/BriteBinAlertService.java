@@ -5,6 +5,7 @@ import java.io.File;
 import org.apache.log4j.Logger;
 
 import com.trandonsystems.britebin.services.AlertServices;
+import com.trandonsystems.britebin.services.GuestServices;
 import com.trandonsystems.britebin.services.JavaMailServices;
 import com.trandonsystems.britebin.services.PushNotificationServices;
 import com.trandonsystems.britebin.services.SmsServices;
@@ -49,6 +50,9 @@ public class BriteBinAlertService {
 
     			alertServices.processWaitingAlerts();
 
+    			// duplicate GuestReadings
+//    			GuestServices.duplicateGuestReadings();
+    			
     			// Wait set period before attempting to process any more alerts
             	Thread.sleep(intervalDelay);
             }

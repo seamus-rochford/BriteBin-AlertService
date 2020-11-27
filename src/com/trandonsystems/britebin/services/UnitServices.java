@@ -73,9 +73,10 @@ public class UnitServices {
 	    Timer timer = new Timer("Timer");
 	    
 	    long delay = 1000L;
-	    long period = 1000L * 60L;  // Check every 1 minute
-//	    long period = 1000L * 60L * 60L;  // Check every 1 hour
+//	    long period = 1000L * 60L;  // Check every 1 minute
+	    long period = 1000L * 60L * 60L;  // Check every 1 hour
 //	    long period = 1000L * 60L * 60L * 6L;  // Check every 6 hour
 	    timer.scheduleAtFixedRate(repeatedTask, delay, period);
+	    log.info("Scheduler configured");
 	}
 }
