@@ -36,7 +36,9 @@ public class BriteBinAlertService {
         try {
         	
         	// Check if any units are not reporting - this is scheduled to check every 6 hours
-        	UnitServices.scheduleCheckUnits();
+        	// The following call appear sto block the rest of this service from running
+        	// Instead I call the UnitService.checkUnits every time I go around the loop
+//        	UnitServices.scheduleCheckUnits();
         	
 			JavaMailServices.initializeEmailer();
 			SmsServices.initializeSms();
@@ -44,12 +46,20 @@ public class BriteBinAlertService {
  
 			AlertServices alertServices = new AlertServices();
 
+			int checkUnitsReportingCount = 0;
 			while (true) {
             	
             	log.info("Processing waiting alerts ...");
 
     			alertServices.processWaitingAlerts();
 
+    			checkUnitsReportingCount++;
+    			if (checkUnitsReportingCount == 60) {
+    				// Only check if units are reporting once every 60 iterations
+    				UnitServices.checkUnits();
+    				checkUnitsReportingCount = 0;
+    			}
+    			
     			// duplicate GuestReadings
 //    			GuestServices.duplicateGuestReadings();
     			

@@ -20,7 +20,7 @@ public class UnitServices {
 	static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 	
-	private static void checkUnits() {
+	public static void checkUnits() {
 		
 		try {
 			log.info("UnitServices.checkUnits()");
@@ -63,20 +63,20 @@ public class UnitServices {
 		}
 	}
 	
-	public static void scheduleCheckUnits() {
-	    TimerTask repeatedTask = new TimerTask() {
-	        public void run() {
-	            log.info("Schedule check if units reporting " + new Date());
-	            checkUnits();
-	        }
-	    };
-	    Timer timer = new Timer("Timer");
-	    
-	    long delay = 1000L;
-//	    long period = 1000L * 60L;  // Check every 1 minute
-	    long period = 1000L * 60L * 60L;  // Check every 1 hour
-//	    long period = 1000L * 60L * 60L * 6L;  // Check every 6 hour
-	    timer.scheduleAtFixedRate(repeatedTask, delay, period);
-	    log.info("Scheduler configured");
-	}
+//	public static void scheduleCheckUnits() {
+//	    TimerTask repeatedTask = new TimerTask() {
+//	        public void run() {
+//	            log.info("Schedule check if units reporting " + new Date());
+//	            checkUnits();
+//	        }
+//	    };
+//	    Timer timer = new Timer("Timer");
+//	    
+//	    long delay = 1000L;
+////	    long period = 1000L * 60L;  // Check every 1 minute
+//	    long period = 1000L * 60L * 60L;  // Check every 1 hour
+////	    long period = 1000L * 60L * 60L * 6L;  // Check every 6 hour
+//	    timer.scheduleAtFixedRate(repeatedTask, delay, period);
+//	    log.info("Scheduler configured");
+//	}
 }
