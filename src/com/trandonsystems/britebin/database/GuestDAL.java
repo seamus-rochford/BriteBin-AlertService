@@ -20,7 +20,7 @@ public class GuestDAL {
 		
 		log.info("AlertDAL.getGuestDuplicates()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -54,7 +54,7 @@ public class GuestDAL {
 	public static int duplicateReadings (int guestUnitId, int dupUnitId) throws SQLException {
 		log.info("AlertDAL.getGuestDuplicates()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}

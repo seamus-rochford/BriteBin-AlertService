@@ -17,7 +17,7 @@ public class SystemDAL {
 		
 		log.info("SystemDAL.getSysConfigValue(" + name + ")");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}

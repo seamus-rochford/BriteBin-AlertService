@@ -212,7 +212,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsBinFull()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -246,7 +246,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsBatteryUVLO()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -280,7 +280,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsBinEmptiedLastPeriod()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -314,7 +314,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsBatteryOverTempLO()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -348,7 +348,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsBinLocked()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -382,7 +382,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsBinTilted()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -416,7 +416,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsServiceDoorOpen()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -450,7 +450,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsFlapStuckOpen()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -484,7 +484,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsDamage()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -525,7 +525,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlertsNoReadings()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -559,7 +559,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingAlerts()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -590,7 +590,7 @@ public class AlertDAL {
 	public static List<EmailDefn> getAlertEmailDefns() throws Exception{
 		log.info("AlertDAL.getAlertEmails()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -629,7 +629,7 @@ public class AlertDAL {
 	public static List<SmsDefn> getAlertSmsDefns() throws Exception{
 		log.info("AlertDAL.getAlertSmsDefns()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -667,7 +667,7 @@ public class AlertDAL {
 	public static List<PushNotificationDefn> getPushNotificationDefns() throws Exception{
 		log.info("AlertDAL.getPushNotificationDefns()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -706,7 +706,7 @@ public class AlertDAL {
 	public static void markAlertAsProcessed(int alertId) throws SQLException {
 		log.info("AlertDAL.markAlertAsProcessed()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -729,7 +729,7 @@ public class AlertDAL {
 //	public static void markAlertAsFailed(int alertId, int contactType, String contactDetails, String reason) {
 //		log.info("AlertDAL.markAlertAsFailed()");
 //		try {
-//			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+//			Class.forName("com.mysql.cj.jdbc.Driver");
 //		} catch (Exception ex) {
 //			log.error("ERROR: " + ex.getMessage());
 //		}
@@ -755,7 +755,7 @@ public class AlertDAL {
 	public static int generateEmail(int alertId, String email, String subject, boolean htmlBody, String body) throws SQLException {
 		log.info("AlertDAL.generateEmail()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -789,7 +789,7 @@ public class AlertDAL {
 	public static void markEmailAlertAsFailed(int id, String comment) {
 		log.info("AlertDAL.markEmailAlertAsFailed()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -813,7 +813,7 @@ public class AlertDAL {
 	public static void markEmailAlertAsSent(int id) {
 		log.info("AlertDAL.markEmailAlertAsSent()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -837,7 +837,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingEmail()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -878,7 +878,7 @@ public class AlertDAL {
 	public static int generateSms(int alertId, String phoneNo, String message) throws SQLException {
 		log.info("AlertDAL.generateSms()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -938,7 +938,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.saveSmsResponse()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -973,7 +973,7 @@ public class AlertDAL {
 	public static void markSmsAlertAsFailed(int id, String comment) {
 		log.info("AlertDAL.markSmsAlertAsFailed()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -998,7 +998,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingSms()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -1035,7 +1035,7 @@ public class AlertDAL {
 	public static int generatePushNotification(int alertId, String gcmToken, String title, String body) throws SQLException {
 		log.info("AlertDAL.generatePushNotification()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -1069,7 +1069,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.getWaitingPushNotifications()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -1107,7 +1107,7 @@ public class AlertDAL {
 	public static void markPushNotificationAlertAsFailed(int id, String comment) {
 		log.info("AlertDAL.markPushNotificationAlertAsFailed()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -1131,7 +1131,7 @@ public class AlertDAL {
 		
 		log.info("AlertDAL.savePushNotificationResponse()");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}

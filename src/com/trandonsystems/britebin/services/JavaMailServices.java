@@ -19,6 +19,8 @@ import javax.mail.internet.MimeMultipart;
 
 import org.apache.log4j.Logger;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.trandonsystems.britebin.database.SystemDAL;
 
 public class JavaMailServices {
@@ -29,7 +31,8 @@ public class JavaMailServices {
 	static String SMTP_PASSWORD = "password";
 	
 	static Logger log = Logger.getLogger(JavaMailServices.class);
-	
+	static Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
 	public static boolean initializeEmailer() throws Exception {
 		try {
 		
@@ -70,6 +73,8 @@ public class JavaMailServices {
 			if (!password.equals("")) {
 				properties.put("mail.smtp.auth", "true");
 				log.debug("sendMail - mail.smtp.auth set: " + "true");
+				
+				properties.put("mail.smtp.socketFactory.port", SMTP_PORT);
 			} else {
 				properties.put("mail.smtp.auth", "false");
 				log.debug("sendMail - mail.smtp.auth set: " + "false");
@@ -77,7 +82,7 @@ public class JavaMailServices {
 			properties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
 			log.debug("sendMail - mail.smtp.socketFactory.class set: " + "javax.net.ssl.SSLSocketFactory");
 
-			Session session = Session.getDefaultInstance(properties, null);
+			Session session = Session.getInstance(properties, null);
 			if (!password.equals("")) {
 				session = Session.getInstance(properties, new Authenticator() {
 					@Override
@@ -90,6 +95,8 @@ public class JavaMailServices {
 				log.debug("sendMail - Session created without authentication");
 			}
 			
+			session.setDebug(true);
+
 			log.debug("sendMail - prepareMessage");
 			
 			Message message = prepareMessage(session, myAccountEmail, recepient, subject, htmlBody, body);

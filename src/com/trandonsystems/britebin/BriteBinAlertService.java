@@ -36,7 +36,7 @@ public class BriteBinAlertService {
         try {
         	
         	// Check if any units are not reporting - this is scheduled to check every 6 hours
-        	// The following call appear sto block the rest of this service from running
+        	// The following call appear to block the rest of this service from running
         	// Instead I call the UnitService.checkUnits every time I go around the loop
 //        	UnitServices.scheduleCheckUnits();
         	

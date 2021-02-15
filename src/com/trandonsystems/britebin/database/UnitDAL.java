@@ -65,7 +65,7 @@ public class UnitDAL {
 
 		log.info("UnitDAL.getLatestReadings(userFilterId)");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -98,7 +98,7 @@ public class UnitDAL {
 
 		log.info("UnitDAL.getAlertCount24Hours(unitId, alertType)");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: " + ex.getMessage());
 		}
@@ -131,7 +131,7 @@ public class UnitDAL {
 
 		log.info("UnitDAL.saveAlert(unitId, unitReadingId, comment)");
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
 			log.error("ERROR: Can't create instance of driver" + ex.getMessage());
 		}

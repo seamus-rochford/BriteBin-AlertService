@@ -324,10 +324,12 @@ public class AlertServices {
 				processAlert(waitingAlerts.get(i));
 			}
 			
-			sendEmails();
 			sendSms();
 //			sendWhatsApp();
 			sendPushNotifications();
+			
+			// Send e-mails last in-case the service hangs again on a specific email send
+			sendEmails();
 			
 		} catch (Exception ex) {
 			log.error("processWaitingAlerts: ERROR: " + ex.getMessage());
@@ -345,7 +347,15 @@ public class AlertServices {
 			List<Email> emailList = AlertDAL.getWaitingEmails();
 			
 			int emailCount =  0;
-			for(int i = 0; i < emailList.size(); i++) {
+			int noEmailsToProcess = 0;
+			if (emailList.size() > 20) {
+				log.info("No. emails to process: " + emailList.size() + " - More than 20 emails to process - process 20 emails only");
+				noEmailsToProcess = 20;
+			} else {
+				noEmailsToProcess = emailList.size();
+			}
+			
+			for(int i = 0; i < noEmailsToProcess; i++) {
 				Email email = emailList.get(i);
 				try {
 					JavaMailServices.sendMail(email.emailAddr, email.subject, email.htmlBody, email.body);
@@ -355,7 +365,9 @@ public class AlertServices {
 					AlertDAL.markEmailAlertAsFailed(email.id, ex.getMessage());
 				}
 			}
-			log.info("All waiting Emails (" + emailList.size() + ") Processed - " + emailCount +  " successfully sent");
+			log.info("Processed Emails (" + noEmailsToProcess + ") - " + emailCount +  " successfully sent");
+			
+
 		} catch (Exception ex) {
 			log.error("processWaitingAlerts: ERROR: " + ex.getMessage());
 		}			
